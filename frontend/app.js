@@ -1,4 +1,6 @@
-const API_BASE = "http://localhost:8000";
+const API_BASE = window.location.hostname === 'localhost' 
+    ? "http://localhost:8000" 
+    : "https://your-backend-url.onrender.com"; // Update this after deploying backend
 
 console.log('🚀 Mini Google AI Loading...');
 console.log('📡 API Base:', API_BASE);

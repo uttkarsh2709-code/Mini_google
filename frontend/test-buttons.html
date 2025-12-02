@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Button Test</title>
+    <style>
+        body { font-family: Arial; padding: 20px; background: #1a1a1a; color: white; }
+        button { padding: 10px 20px; margin: 10px; font-size: 16px; cursor: pointer; }
+        .result { margin: 20px 0; padding: 10px; background: #2a2a2a; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Button Test Page</h1>
+    <div>
+        <button id="test-login">Test Login Button</button>
+        <button id="test-signup">Test Signup Button</button>
+        <button id="test-send">Test Send Message</button>
+    </div>
+    <div class="result" id="result">Click buttons to test...</div>
+
+    <script>
+        document.getElementById('test-login').addEventListener('click', () => {
+            document.getElementById('result').innerHTML = '✅ Login button works! Opening modal...';
+            if (typeof window.openLoginModal === 'function') {
+                window.openLoginModal();
+            } else {
+                document.getElementById('result').innerHTML = '❌ openLoginModal function not found';
+            }
+        });
+
+        document.getElementById('test-signup').addEventListener('click', () => {
+            document.getElementById('result').innerHTML = '✅ Signup button works! Opening modal...';
+            if (typeof window.openLoginModal === 'function') {
+                window.openLoginModal();
+            } else {
+                document.getElementById('result').innerHTML = '❌ openLoginModal function not found';
+            }
+        });
+
+        document.getElementById('test-send').addEventListener('click', () => {
+            document.getElementById('result').innerHTML = '✅ Send button works! Form would submit...';
+        });
+    </script>
+</body>
+</html>

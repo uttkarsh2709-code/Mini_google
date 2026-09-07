@@ -1,76 +1,84 @@
-"""Build a Whoosh index from crawler output."""
+"""Build a SQLite index from crawler output."""
 from __future__ import annotations
 
 import argparse
 import json
+import sqlite3
+import sys
+import os
 from pathlib import Path
 
-from whoosh import index
-from whoosh.fields import ID, KEYWORD, TEXT, Schema
-from whoosh.analysis import StemmingAnalyzer
-
-
-SCHEMA = Schema(
-    url=ID(stored=True, unique=True),
-    title=TEXT(stored=True, analyzer=StemmingAnalyzer()),
-    content=TEXT(stored=True, analyzer=StemmingAnalyzer()),
-    outgoing_links=KEYWORD(stored=True, commas=True),
-)
-
+# Add parent directory to python path to can import search_api
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from search_api.database import DB_PATH, init_db, publish_to_astra
 
 def load_documents(raw_path: Path) -> list[dict[str, str]]:
     documents: list[dict[str, str]] = []
+    if not raw_path.exists():
+        print(f"⚠️ Warning: {raw_path} not found. Run crawler first.")
+        return []
+        
     with raw_path.open("r", encoding="utf-8") as fh:
         for line in fh:
-            data = json.loads(line)
-            documents.append(
-                {
-                    "url": data.get("url", ""),
-                    "title": data.get("title", "Untitled"),
-                    "content": data.get("text", ""),
-                    "outgoing_links": ",".join(data.get("outgoing_links", [])),
-                }
-            )
+            try:
+                data = json.loads(line)
+                documents.append(
+                    {
+                        "url": data.get("url", ""),
+                        "title": data.get("title", "Untitled"),
+                        "content": data.get("text", ""),
+                        "outgoing_links": ",".join(data.get("outgoing_links", [])),
+                    }
+                )
+            except json.JSONDecodeError:
+                continue
     return documents
 
 
-def build_index(raw_path: Path, index_dir: Path) -> None:
-    index_dir.mkdir(parents=True, exist_ok=True)
-
-    if index.exists_in(index_dir):
-        idx = index.open_dir(index_dir)
-    else:
-        idx = index.create_in(index_dir, SCHEMA)
-
+def build_index(raw_path: Path) -> None:
+    # 1. Initialize Database
+    init_db()
+    
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    
+    # 2. Load Documents
     documents = load_documents(raw_path)
-    writer = idx.writer()
+    if not documents:
+        print("No documents found to index.")
+        return
+
+    # 3. Insert into SQLite (FTS)
+    print(f"Indexing {len(documents)} documents into SQLite...")
+    
+    # Clear old data (optional: remove this if you want to append)
+    c.execute("DELETE FROM pages")
+    
     for doc in documents:
-        writer.update_document(**doc)
-    writer.commit()
-    print(f"Indexed {len(documents)} documents into {index_dir}")
-
-
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Build Whoosh search index")
-    parser.add_argument(
-        "--raw",
-        type=Path,
-        default=Path("../data/raw/pages.jsonl"),
-        help="Path to crawler JSONL output",
-    )
-    parser.add_argument(
-        "--index-dir",
-        type=Path,
-        default=Path("../data/index"),
-        help="Index directory",
-    )
-    return parser.parse_args()
-
-
-def main() -> None:
-    args = parse_args()
-    build_index(args.raw, args.index_dir)
+        # FTS insert
+        c.execute(
+            "INSERT INTO pages (url, title, content, outgoing_links) VALUES (?, ?, ?, ?)",
+            (doc["url"], doc["title"], doc["content"], doc["outgoing_links"])
+        )
+        
+    conn.commit()
+    conn.close()
+    try:
+        published = publish_to_astra(documents)
+        if published:
+            print(f"✅ Published {published} pages to Astra DB")
+    except Exception as exc:
+        print(f"⚠️ Astra publish failed after local indexing: {exc}")
+    print(f"✅ Successfully indexed {len(documents)} pages into minigoogle.db")
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Build SQLite index from crawled data")
+    parser.add_argument("--data", "--raw", dest="data", type=Path, default=Path("data/raw/pages.jsonl"), help="Path to raw pages.jsonl")
+    args = parser.parse_args()
+    
+    # Ensure path is absolute or correct relative to execution
+    # If script runs from 'indexer', ../data/raw/pages.jsonl is likely needed if default is used
+    # But usually run from root: python indexer/build_index.py
+    
+    build_index(args.data)

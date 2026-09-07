@@ -1,6 +1,6 @@
 # Mini Google
 
-A beginner-friendly, fully local mini search engine that crawls the web, builds a Whoosh (BM25) index, exposes a FastAPI search endpoint, and ships with a clean Google-inspired frontend.
+A beginner-friendly mini search engine that crawls the web, indexes pages locally in SQLite, optionally publishes them to Astra DB, exposes a FastAPI search endpoint, and ships with a clean Google-inspired frontend.
 
 ## Project Layout
 
@@ -50,7 +50,7 @@ Options:
 
 ## 3. Build the Search Index
 
-Transform the JSONL output into a Whoosh index scored with BM25.
+Transform the JSONL output into the local SQLite FTS index and, when Astra is configured, publish the same pages to an Astra DB JSON API collection.
 
 ```cmd
 python indexer\build_index.py --raw data/raw/pages.jsonl --index-dir data/index
@@ -58,7 +58,20 @@ python indexer\build_index.py --raw data/raw/pages.jsonl --index-dir data/index
 
 You can re-run this command whenever new crawl data is available.
 
-## 4. Run the FastAPI Search Service
+## 4. Configure Astra DB (optional but recommended)
+
+Create an Astra DB collection named `pages`, then add these values to `.env`:
+
+```text
+ASTRA_DB_API_ENDPOINT=https://your-database-id-region.apps.astra.datastax.com
+ASTRA_DB_APPLICATION_TOKEN=your-astra-application-token
+ASTRA_DB_NAMESPACE=default_keyspace
+ASTRA_DB_COLLECTION=pages
+```
+
+The indexer publishes documents to Astra when these values are present. Search reads Astra first and falls back to local SQLite and DuckDuckGo if Astra is unavailable.
+
+## 5. Run the FastAPI Search Service
 
 ```cmd
 uvicorn search_api.main:app --app-dir . --reload --port 8000
@@ -67,7 +80,7 @@ uvicorn search_api.main:app --app-dir . --reload --port 8000
 - Endpoint: `GET /search?query=your+terms&limit=10`
 - Ranking: BM25 over title + body with snippet highlights.
 
-## 5. Launch the Frontend
+## 6. Launch the Frontend
 
 Serve the static files using any HTTP server (Live Server extension or Python's built-in server). Example:
 
@@ -80,8 +93,8 @@ Visit `http://127.0.0.1:8080` and issue queries—the page fetches results from 
 ## How It Works
 
 1. **Crawler** collects URL, title, cleaned text, and outgoing links into `data/raw/pages.jsonl`.
-2. **Indexer** converts the JSONL into a Whoosh index optimized for BM25 ranking.
-3. **FastAPI** opens the index, parses queries across title+content, and returns ranked documents with highlighted snippets.
+2. **Indexer** stores the JSONL in SQLite FTS and optionally publishes it to Astra DB.
+3. **FastAPI** queries Astra first, then local FTS and DuckDuckGo, and returns ranked documents with snippets.
 4. **Frontend** mimics Google's minimalist UI and calls the API to render result cards with title, URL, and snippet.
 
 ## Tips

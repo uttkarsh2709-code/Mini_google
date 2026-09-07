@@ -9,3 +9,11 @@ services:
         sync: false
       - key: GEMINI_API_KEY
         sync: false
+      - key: ASTRA_DB_API_ENDPOINT
+        sync: false
+      - key: ASTRA_DB_APPLICATION_TOKEN
+        sync: false
+      - key: ASTRA_DB_NAMESPACE
+        value: default_keyspace
+      - key: ASTRA_DB_COLLECTION
+        value: pages

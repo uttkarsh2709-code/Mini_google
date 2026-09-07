@@ -1,6 +1,8 @@
-const API_BASE = window.location.hostname === 'localhost' 
-    ? "http://localhost:8000" 
-    : "https://your-backend-url.onrender.com"; // Update this after deploying backend
+const API_BASE = window.__MINI_GOOGLE_API__ || (
+    window.location.port === '8080' || window.location.protocol === 'file:'
+        ? 'http://127.0.0.1:8000'
+        : ''
+);
 
 console.log('🚀 Mini Google AI Loading...');
 console.log('📡 API Base:', API_BASE);
@@ -97,6 +99,110 @@ document.addEventListener('keydown', (e) => {
         } else if (reportModal?.classList.contains('show')) {
             window.closeReportModal();
         }
+    }
+});
+
+let isAuthModeSignup = false;
+
+window.toggleAuthMode = function() {
+    isAuthModeSignup = !isAuthModeSignup;
+    const modalTitle = document.getElementById('auth-modal-title');
+    const submitBtn = document.getElementById('auth-submit-btn');
+    const switchText = document.getElementById('auth-switch-text');
+    const switchLink = document.getElementById('auth-switch-link');
+    
+    if (isAuthModeSignup) {
+        modalTitle.textContent = "Create account";
+        submitBtn.textContent = "Sign Up";
+        switchText.textContent = "Already have an account? ";
+        switchLink.textContent = "Log in";
+    } else {
+        modalTitle.textContent = "Log in";
+        submitBtn.textContent = "Log In";
+        switchText.textContent = "Don't have an account? ";
+        switchLink.textContent = "Create account";
+    }
+};
+
+window.handleAuthSubmit = async function() {
+    console.log('🔐 Auth submit triggered');
+    const emailInput = document.getElementById('auth-email');
+    const passwordInput = document.getElementById('auth-password');
+    const msgLabel = document.getElementById('auth-message');
+    const btn = document.getElementById('auth-submit-btn');
+    
+    const email = emailInput.value;
+    const password = passwordInput.value;
+    
+    if (!email || !password) {
+        msgLabel.textContent = "Please enter both email and password.";
+        msgLabel.style.display = "block";
+        return;
+    }
+
+    msgLabel.style.display = "none";
+    btn.disabled = true;
+    btn.textContent = "Processing...";
+
+    const endpoint = isAuthModeSignup ? '/auth/signup' : '/auth/login';
+
+    try {
+        const response = await fetch(`${API_BASE}${endpoint}`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ email, password })
+        });
+
+        const data = await response.json();
+        
+        if (response.ok) {
+            localStorage.setItem('user_email', email);
+            showNotification(isAuthModeSignup 
+                ? 'Account created! Welcome email sent.' 
+                : `Welcome back, ${email}!`, 'success');
+            window.closeLoginModalFunc();
+            updateUIForLoggedInUser(email);
+        } else {
+            msgLabel.textContent = data.detail || "Authentication failed";
+            msgLabel.style.display = "block";
+        }
+        
+    } catch (e) {
+        console.error(e);
+        msgLabel.textContent = "Connection error. Is backend running?";
+        msgLabel.style.display = "block";
+    } finally {
+        btn.disabled = false;
+        btn.textContent = isAuthModeSignup ? "Sign Up" : "Log In";
+    }
+};
+
+function updateUIForLoggedInUser(email) {
+    const loginBtn = document.getElementById('login-btn');
+    if (loginBtn) {
+        // Create Avatar
+        const initial = email.charAt(0).toUpperCase();
+        loginBtn.innerHTML = `<button class="user-avatar" title="${email}">${initial}</button>`;
+        loginBtn.className = ""; // Remove previous classes like 'header-btn'
+        loginBtn.style.background = "none";
+        loginBtn.style.border = "none";
+        loginBtn.style.padding = "0";
+        loginBtn.onclick = () => {
+             const doLogout = confirm(`Logged in as ${email}.\nDo you want to log out?`);
+             if(doLogout) {
+                 localStorage.removeItem('user_email');
+                 window.location.reload();
+             }
+        };
+    }
+    loadHistoryFromBackend();
+}
+
+// Check login status on load
+document.addEventListener('DOMContentLoaded', () => {
+    const email = localStorage.getItem('user_email');
+    if (email) {
+        updateUIForLoggedInUser(email);
     }
 });
 
@@ -516,9 +622,45 @@ function openBookmark(url) {
 
 // History Management
 function addToHistory(query, url, title) {
-    history.unshift({ query, url, title, timestamp: Date.now() });
+    const item = { query, url, title, timestamp: Date.now() };
+    history.unshift(item);
     if (history.length > 100) history = history.slice(0, 100);
     localStorage.setItem('history', JSON.stringify(history));
+    saveHistoryEvent({ event_type: 'search', query, url, title });
+}
+
+async function saveHistoryEvent(event) {
+    const email = localStorage.getItem('user_email');
+    if (!email) return;
+    try {
+        await fetch(`${API_BASE}/history`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...event, email })
+        });
+    } catch (error) {
+        console.warn('Backend history save unavailable; local history retained.', error);
+    }
+}
+
+async function loadHistoryFromBackend() {
+    const email = localStorage.getItem('user_email');
+    if (!email) return;
+    try {
+        const response = await fetch(`${API_BASE}/history?email=${encodeURIComponent(email)}&limit=100`);
+        if (!response.ok) return;
+        const data = await response.json();
+        history = data.items.filter(item => item.event_type === 'search').map(item => ({
+            query: item.query,
+            title: item.title || item.query,
+            url: item.url || '',
+            timestamp: Date.parse(item.created_at) || Date.now()
+        }));
+        localStorage.setItem('history', JSON.stringify(history));
+        renderHistory();
+    } catch (error) {
+        console.warn('Could not load backend history; using local history.', error);
+    }
 }
 
 function renderHistory() {
@@ -545,11 +687,22 @@ function reopenSearch(query) {
 
 function clearAllData() {
     if (confirm('Clear all bookmarks, history, and settings?')) {
+        clearBackendHistory();
         localStorage.clear();
         bookmarks = [];
         history = [];
         settings = {darkMode: true, resultsLimit: 10};
         alert('All data cleared!');
+    }
+}
+
+async function clearBackendHistory() {
+    const email = localStorage.getItem('user_email');
+    if (!email) return;
+    try {
+        await fetch(`${API_BASE}/history?email=${encodeURIComponent(email)}`, { method: 'DELETE' });
+    } catch (error) {
+        console.warn('Could not clear backend history.', error);
     }
 }
 
@@ -632,8 +785,63 @@ function clearSearch() {
     mainContainer.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+// Rating & Search Count Logic
+let searchCount = parseInt(localStorage.getItem('searchCount') || '0');
+let hasRated = localStorage.getItem('hasRated') === 'true';
+
+function checkRatingPrompt() {
+    searchCount++;
+    localStorage.setItem('searchCount', searchCount);
+    
+    if (searchCount >= 10 && !hasRated) {
+        // Show modal after a short delay
+        setTimeout(() => {
+            const modal = document.getElementById('rating-modal-overlay');
+            if (modal) {
+                modal.classList.add('show');
+                modal.style.display = 'flex';
+            }
+        }, 2000);
+    }
+}
+
+let currentRating = 0;
+window.setRating = function(stars) {
+    currentRating = stars;
+    const starElements = document.querySelectorAll('.star-rating span');
+    starElements.forEach((star, index) => {
+        star.style.color = index < stars ? '#FFD700' : 'var(--text-secondary)';
+    });
+};
+
+window.submitRating = async function() {
+    const feedback = document.getElementById('rating-feedback').value;
+    const email = localStorage.getItem('user_email') || 'anonymous';
+    
+    try {
+        await fetch(`${API_BASE}/rating`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ email, stars: currentRating, feedback })
+        });
+        showNotification('Thank you for your feedback! ⭐', 'success');
+    } catch(e) {
+        console.error("Rating error", e);
+    }
+    
+    localStorage.setItem('hasRated', 'true');
+    window.closeRatingModal();
+};
+
+window.closeRatingModal = function() {
+    const modal = document.getElementById('rating-modal-overlay');
+    if (modal) modal.classList.remove('show');
+};
+
 // API Search Function
 async function search(query, limit = settings.resultsLimit) {
+    checkRatingPrompt(); // Increment counter on search
+    
     const params = new URLSearchParams({ query, limit: limit.toString() });
     const response = await fetch(`${API_BASE}/search?${params.toString()}`);
     if (!response.ok) {
@@ -651,7 +859,8 @@ async function chatWithAI(userMessage) {
     
     const requestBody = {
         messages: conversationHistory,
-        model: 'llama-3.3-70b-versatile',
+        provider: 'gemini',
+        model: 'gemini-3.6-flash',
         temperature: 0.7,
         max_tokens: 2000
     };
@@ -1770,11 +1979,19 @@ window.addEventListener('load', () => {
 // ====== ENHANCED FEATURES ======
 
 // AI Provider & Model Management
-let aiSettings = JSON.parse(localStorage.getItem('aiSettings') || '{"provider": "groq", "model": "llama-3.3-70b-versatile", "syntaxHighlighting": true}');
+let aiSettings = JSON.parse(localStorage.getItem('aiSettings') || '{"provider": "gemini", "model": "gemini-3.6-flash", "syntaxHighlighting": true}');
+if (aiSettings.model.startsWith('llama-') || aiSettings.model.startsWith('models/')) {
+    aiSettings = { ...aiSettings, provider: 'gemini', model: 'gemini-3.6-flash' };
+    localStorage.setItem('aiSettings', JSON.stringify(aiSettings));
+}
 
 const providerSelect = document.getElementById('ai-provider-select');
 const modelSelect = document.getElementById('ai-model-select');
 const syntaxToggle = document.getElementById('syntax-highlighting');
+let providerModels = {
+    gemini: ['gemini-3.6-flash', 'gemini-2.5-pro'],
+    groq: ['openai/gpt-oss-120b']
+};
 
 // Load saved AI settings
 if (providerSelect && modelSelect) {
@@ -1803,24 +2020,41 @@ if (syntaxToggle) {
 }
 
 function updateModelOptions(provider) {
-    const groqModels = [
-        { value: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B' },
-        { value: 'llama-3.1-70b-versatile', label: 'Llama 3.1 70B' },
-        { value: 'mixtral-8x7b-32768', label: 'Mixtral 8x7B' }
-    ];
-    
-    const openaiModels = [
-        { value: 'gpt-3.5-turbo', label: 'GPT-3.5 Turbo' },
-        { value: 'gpt-4', label: 'GPT-4' },
-        { value: 'gpt-4-turbo', label: 'GPT-4 Turbo' }
-    ];
-    
-    const models = provider === 'groq' ? groqModels : openaiModels;
+    const models = (providerModels[provider] || providerModels.gemini).map(value => ({
+        value,
+        label: value
+    }));
     modelSelect.innerHTML = models.map(m => `<option value="${m.value}">${m.label}</option>`).join('');
     modelSelect.value = models[0].value;
     aiSettings.model = models[0].value;
     localStorage.setItem('aiSettings', JSON.stringify(aiSettings));
 }
+
+async function loadProviderModels() {
+    try {
+        const response = await fetch(`${API_BASE}/providers`);
+        if (!response.ok) return;
+        const data = await response.json();
+        providerModels = Object.fromEntries(
+            Object.entries(data).map(([provider, info]) => [provider, info.models || []])
+        );
+        if (providerModels.gemini?.includes('gemini-3.6-flash')) {
+            providerModels.gemini = [
+                'gemini-3.6-flash',
+                ...providerModels.gemini.filter(model => model !== 'gemini-3.6-flash')
+            ];
+        }
+        if (!providerModels[aiSettings.provider]?.length) {
+            aiSettings.provider = 'gemini';
+        }
+        updateModelOptions(aiSettings.provider);
+        providerSelect.value = aiSettings.provider;
+    } catch (error) {
+        console.warn('Could not load provider models:', error);
+    }
+}
+
+loadProviderModels();
 
 // Conversation Management
 let conversations = JSON.parse(localStorage.getItem('conversations') || '[]');
@@ -2164,6 +2398,7 @@ chatWithAI = async function(userMessage) {
     
     const requestBody = {
         messages: conversationHistory,
+        provider: aiSettings.provider,
         model: aiSettings.model, // Use selected model
         temperature: 0.7,
         max_tokens: 2000
@@ -2195,6 +2430,12 @@ chatWithAI = async function(userMessage) {
     conversationHistory.push({
         role: 'assistant',
         content: data.response
+    });
+    saveHistoryEvent({
+        event_type: 'chat',
+        query: userMessage,
+        title: 'AI conversation',
+        response: data.response
     });
     
     return data;

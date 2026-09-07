@@ -1,5 +1,10 @@
 [build]
   publish = "frontend"
+  command = ""
+  ignore = "exit 0"
+
+[build.environment]
+  NETLIFY_SKIP_FUNCTION_BUNDLING = "true"
 
 [[redirects]]
   from = "/api/*"

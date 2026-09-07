@@ -1,0 +1,9 @@
+{
+  "name": "mini-google-frontend",
+  "version": "1.0.0",
+  "description": "Mini Google - AI-powered search engine frontend",
+  "private": true,
+  "scripts": {
+    "build": "echo 'Static site - no build needed'"
+  }
+}

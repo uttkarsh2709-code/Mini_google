@@ -17,3 +17,7 @@ services:
         value: default_keyspace
       - key: ASTRA_DB_COLLECTION
         value: pages
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGODB_DB_NAME
+        value: minigoogle

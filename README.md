@@ -1,104 +1,127 @@
 # Mini Google
 
-A beginner-friendly mini search engine that crawls the web, indexes pages locally in SQLite, optionally publishes them to Astra DB, exposes a FastAPI search endpoint, and ships with a clean Google-inspired frontend.
+A mini search engine that crawls the web, indexes pages locally and in MongoDB, exposes a search and AI chat API, and ships with a clean Google-inspired frontend.
 
 ## Project Layout
 
 ```
 Mini google/
 ├── crawler/
-│   └── crawler.py
+│   └── crawler.py               # Web crawler
 ├── data/
-│   ├── index/              # Whoosh index (created after indexing)
-│   └── raw/                # JSONL pages from the crawler
+│   ├── index/                   # Local index data
+│   └── raw/pages.jsonl          # Raw crawled pages
 ├── frontend/
-│   ├── app.js
-│   ├── index.html
-│   └── styles.css
+│   ├── app.js                   # Client logic (search, AI chat, auth, history, ratings)
+│   ├── index.html               # Main user interface
+│   ├── styles.css               # Search engine styling
+│   └── avatar.css               # Profile avatar styling
 ├── indexer/
-│   └── build_index.py
-├── search_api/
-│   ├── __init__.py
-│   └── main.py
-├── requirements.txt
+│   └── build_index.py           # Indexer (MongoDB, SQLite, Astra DB)
+├── search_api/                  # Primary Backend (FastAPI + Python)
+│   ├── database.py              # Unified database layer (MongoDB + SQLite fallback)
+│   ├── mongodb.py               # MongoDB collections, indexes & CRUD
+│   └── main.py                  # API endpoints & AI integration (Gemini / Groq)
+├── backend_node/                # Alternative Backend (Node.js + Express + Mongoose)
+│   ├── models/                  # Mongoose schemas (User, History, Rating, Page)
+│   ├── server.js                # Express REST API server
+│   └── package.json
+├── requirements.txt             # Python dependencies
+├── .env.example                 # Environment variables template
 └── README.md
 ```
 
-## 1. Environment Setup
+---
 
-```cmd
-cd "c:\Users\uttkarsh raj\OneDrive\Desktop\Mini google"
-python -m venv .venv
-.\.venv\Scripts\activate
-pip install --upgrade pip
-pip install -r requirements.txt
+## 🍃 MongoDB Database Setup
+
+Mini Google uses **MongoDB** to store:
+- **`users`**: User authentication accounts (`email`, `password_hash`, `created_at`).
+- **`user_history`**: Recent searches and AI chat interactions.
+- **`ratings`**: Star ratings and user feedback.
+- **`pages`**: Crawled web pages with full-text search indexing (`$text` on `title` and `content`).
+
+### Configure Connection
+
+Add your MongoDB connection string in `.env`:
+
+```env
+# For local MongoDB:
+MONGODB_URI=mongodb://localhost:27017
+MONGODB_DB_NAME=minigoogle
+
+# Or for MongoDB Atlas Cloud:
+# MONGODB_URI=mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/?retryWrites=true&w=majority
+# MONGODB_DB_NAME=minigoogle
 ```
 
-## 2. Crawl Pages
+> **Note**: If MongoDB is not running or the URI is omitted, the backend automatically falls back to local SQLite (`minigoogle.db`), so the application never crashes!
 
-Use any public site you are allowed to crawl. The crawler stays within the provided host by default.
+---
 
-```cmd
-python crawler\crawler.py --seed https://example.com --limit 40 --out data/raw/pages.jsonl
-```
+## 🚀 Running the Backend
 
-Options:
-- `--seed` (repeatable): starting URLs.
-- `--limit`: max number of pages.
-- `--delay`: polite delay between requests.
-- `--same-domain` / `--no-same-domain`: stay within the seed domains or not.
+You can run either the **Python FastAPI** backend or the **Node.js Express** backend. Both are 100% compatible with the frontend on port `8000`.
 
-## 3. Build the Search Index
+### Option A: Python FastAPI Backend (Recommended)
 
-Transform the JSONL output into the local SQLite FTS index and, when Astra is configured, publish the same pages to an Astra DB JSON API collection.
+1. **Activate your environment & install dependencies**:
+   ```cmd
+   pip install -r requirements.txt
+   ```
 
-```cmd
-python indexer\build_index.py --raw data/raw/pages.jsonl --index-dir data/index
-```
+2. **Start the API server**:
+   ```cmd
+   uvicorn search_api.main:app --reload --port 8000
+   ```
 
-You can re-run this command whenever new crawl data is available.
+3. The API is live at `http://127.0.0.1:8000`. Test the health check:
+   - Visit `http://127.0.0.1:8000/` to verify MongoDB status.
 
-## 4. Configure Astra DB (optional but recommended)
+---
 
-Create an Astra DB collection named `pages`, then add these values to `.env`:
+### Option B: Node.js Express Backend
 
-```text
-ASTRA_DB_API_ENDPOINT=https://your-database-id-region.apps.astra.datastax.com
-ASTRA_DB_APPLICATION_TOKEN=your-astra-application-token
-ASTRA_DB_NAMESPACE=default_keyspace
-ASTRA_DB_COLLECTION=pages
-```
+If you prefer Node.js with Mongoose:
 
-The indexer publishes documents to Astra when these values are present. Search reads Astra first and falls back to local SQLite and DuckDuckGo if Astra is unavailable.
+1. **Install dependencies**:
+   ```cmd
+   cd backend_node
+   npm install
+   ```
 
-## 5. Run the FastAPI Search Service
+2. **Run server**:
+   ```cmd
+   npm start
+   ```
+   The Node.js server will run on `http://127.0.0.1:8000`.
 
-```cmd
-uvicorn search_api.main:app --app-dir . --reload --port 8000
-```
+---
 
-- Endpoint: `GET /search?query=your+terms&limit=10`
-- Ranking: BM25 over title + body with snippet highlights.
+## 🌐 Launch the Frontend
 
-## 6. Launch the Frontend
-
-Serve the static files using any HTTP server (Live Server extension or Python's built-in server). Example:
+Serve the static files using any HTTP server:
 
 ```cmd
 python -m http.server 8080 --directory frontend
 ```
 
-Visit `http://127.0.0.1:8080` and issue queries—the page fetches results from `http://127.0.0.1:8000/search`.
+Open your browser to:
+👉 `http://127.0.0.1:8080`
 
-## How It Works
+The frontend automatically connects to the backend running at `http://127.0.0.1:8000`.
 
-1. **Crawler** collects URL, title, cleaned text, and outgoing links into `data/raw/pages.jsonl`.
-2. **Indexer** stores the JSONL in SQLite FTS and optionally publishes it to Astra DB.
-3. **FastAPI** queries Astra first, then local FTS and DuckDuckGo, and returns ranked documents with snippets.
-4. **Frontend** mimics Google's minimalist UI and calls the API to render result cards with title, URL, and snippet.
+---
 
-## Tips
+## 🕷️ Crawling & Indexing Pages into MongoDB
 
-- Adjust the crawler delay if you see throttling; never crawl sites that disallow it via `robots.txt` (basic respect even though this sample ignores robots).
-- Re-index after every crawl to keep search results fresh.
-- To change the frontend API endpoint, modify `API_BASE` inside `frontend/app.js`.
+1. **Crawl pages**:
+   ```cmd
+   python crawler\crawler.py --seed https://example.com --limit 40 --out data/raw/pages.jsonl
+   ```
+
+2. **Index pages into MongoDB & SQLite**:
+   ```cmd
+   python indexer\build_index.py --raw data/raw/pages.jsonl
+   ```
+   This automatically inserts documents into the MongoDB `pages` collection and creates a text search index!

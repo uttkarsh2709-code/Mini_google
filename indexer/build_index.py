@@ -11,6 +11,7 @@ from pathlib import Path
 # Add parent directory to python path to can import search_api
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from search_api.database import DB_PATH, init_db, publish_to_astra
+from search_api.mongodb import mongo_publish_pages
 
 def load_documents(raw_path: Path) -> list[dict[str, str]]:
     documents: list[dict[str, str]] = []
@@ -63,6 +64,14 @@ def build_index(raw_path: Path) -> None:
         
     conn.commit()
     conn.close()
+
+    try:
+        mongo_published = mongo_publish_pages(documents)
+        if mongo_published:
+            print(f"✅ Published {mongo_published} pages to MongoDB 'pages' collection")
+    except Exception as exc:
+        print(f"⚠️ MongoDB publish failed after indexing: {exc}")
+
     try:
         published = publish_to_astra(documents)
         if published:

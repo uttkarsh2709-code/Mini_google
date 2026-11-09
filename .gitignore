@@ -11,6 +11,12 @@ __pycache__/
 venv/
 env/
 ENV/
+.venv/
+.venv312/
+*.db
+
+# Node
+node_modules/
 
 # IDEs
 .vscode/

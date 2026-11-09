@@ -11,12 +11,29 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from typing import List
 from urllib.parse import quote_plus
-from dotenv import load_dotenv
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
 from fastapi import FastAPI, HTTPException, Query, Body
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from .database import astra_documents, astra_enabled, get_db_connection, init_db
+from .database import (
+    astra_documents,
+    astra_enabled,
+    clear_user_history,
+    create_user,
+    get_active_db_info,
+    get_db_connection,
+    get_user_by_email,
+    get_user_history,
+    init_db,
+    save_user_history,
+    save_user_rating,
+    search_indexed_pages,
+)
 
 # Load environment variables from .env file
 load_dotenv()
@@ -180,11 +197,14 @@ class HistoryEvent(BaseModel):
     response: str | None = None
 
 @app.get("/", tags=["health"])
-def root() -> dict[str, str | bool]:
+def root() -> dict[str, object]:
+    db_info = get_active_db_info()
     return {
         "status": "ok", 
         "message": "Mini Google Search API",
-        "ai_enabled": AI_ENABLED
+        "ai_enabled": AI_ENABLED,
+        "database": db_info.get("active_database"),
+        "mongodb_connected": db_info.get("mongodb_connected"),
     }
 
 
@@ -238,20 +258,16 @@ def send_welcome_email(to_email: str):
 @app.post("/auth/signup")
 def signup(user: UserAuth):
     print(f"👤 Signup attempt for: {user.email}")
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
     try:
         # Check if user exists
-        cursor.execute("SELECT id FROM users WHERE email = ?", (user.email,))
-        if cursor.fetchone():
+        existing_user = get_user_by_email(user.email)
+        if existing_user:
             print("⚠️ User already exists")
             raise HTTPException(status_code=400, detail="User already exists")
             
         # Insert user
         pwd_hash = hash_password(user.password)
-        cursor.execute("INSERT INTO users (email, password_hash) VALUES (?, ?)", (user.email, pwd_hash))
-        conn.commit()
+        create_user(user.email, pwd_hash)
         print(f"✅ User created: {user.email}")
         
         # Send Welcome Email
@@ -264,25 +280,18 @@ def signup(user: UserAuth):
     except Exception as e:
         print(f"❌ Signup error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        conn.close()
 
 
 @app.post("/auth/login")
 def login(user: UserAuth):
     print(f"🔑 Login attempt for: {user.email}")
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
     try:
-        cursor.execute("SELECT password_hash FROM users WHERE email = ?", (user.email,))
-        result = cursor.fetchone()
-        
-        if not result:
+        user_record = get_user_by_email(user.email)
+        if not user_record:
             print("⚠️ User not found")
             raise HTTPException(status_code=404, detail="User not found")
             
-        stored_hash = result['password_hash']
+        stored_hash = user_record["password_hash"]
         if hash_password(user.password) != stored_hash:
             print("❌ Invalid password")
             raise HTTPException(status_code=401, detail="Invalid password")
@@ -295,8 +304,6 @@ def login(user: UserAuth):
     except Exception as e:
         print(f"❌ Login error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        conn.close()
 
 
 @app.post("/history")
@@ -306,67 +313,46 @@ def save_history(event: HistoryEvent):
     if not event.email.strip() or not event.query.strip():
         raise HTTPException(status_code=400, detail="email and query are required")
 
-    conn = get_db_connection()
     try:
-        cursor = conn.cursor()
-        cursor.execute(
-            """INSERT INTO user_history (email, event_type, query, title, url, response)
-               VALUES (?, ?, ?, ?, ?, ?)""",
-            (event.email.strip().casefold(), event.event_type, event.query.strip(),
-             event.title, event.url, event.response),
+        result = save_user_history(
+            email=event.email,
+            event_type=event.event_type,
+            query=event.query,
+            title=event.title,
+            url=event.url,
+            response=event.response,
         )
-        conn.commit()
-        return {"id": cursor.lastrowid, "message": "History saved"}
+        return {"id": result.get("id"), "message": "History saved"}
     except Exception as exc:
-        conn.rollback()
         raise HTTPException(status_code=500, detail=f"Could not save history: {exc}") from exc
-    finally:
-        conn.close()
 
 
 @app.get("/history")
 def get_history(email: str = Query(..., min_length=3), limit: int = Query(100, ge=1, le=500)):
-    conn = get_db_connection()
     try:
-        rows = conn.execute(
-            """SELECT id, event_type, query, title, url, response, created_at
-               FROM user_history WHERE email = ?
-               ORDER BY created_at DESC, id DESC LIMIT ?""",
-            (email.strip().casefold(), limit),
-        ).fetchall()
-        return {"items": [dict(row) for row in rows]}
-    finally:
-        conn.close()
+        rows = get_user_history(email=email, limit=limit)
+        return {"items": rows}
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Could not load history: {exc}") from exc
 
 
 @app.delete("/history")
 def clear_history(email: str = Query(..., min_length=3)):
-    conn = get_db_connection()
     try:
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM user_history WHERE email = ?", (email.strip().casefold(),))
-        conn.commit()
-        return {"deleted": cursor.rowcount}
-    finally:
-        conn.close()
+        deleted = clear_user_history(email=email)
+        return {"deleted": deleted}
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Could not clear history: {exc}") from exc
 
 
 @app.post("/rating")
 def save_rating(rating: UserRating):
     print(f"⭐ Rating received: {rating.stars} stars from {rating.email}")
-    conn = get_db_connection()
-    cursor = conn.cursor()
     try:
-        cursor.execute(
-            "INSERT INTO ratings (email, stars, feedback) VALUES (?, ?, ?)", 
-            (rating.email, rating.stars, rating.feedback)
-        )
-        conn.commit()
+        save_user_rating(email=rating.email, stars=rating.stars, feedback=rating.feedback)
         return {"message": "Rating saved successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        conn.close()
 
 
 @app.post("/chat")
@@ -541,32 +527,21 @@ def search(query: str = Query(..., min_length=2), limit: int = Query(10, ge=1, l
         except requests.RequestException as exc:
             print(f"⚠️ Astra search failed, using local fallback: {exc}")
     
-    # 1. Try Searching Local SQLite Database First
+    # 1. Try Searching Indexed Database (MongoDB text search, then SQLite FTS)
     if not hits:
         try:
-            conn = get_db_connection()
-            cursor = conn.cursor()
-        
-        # FTS5 Match Query
-        # We select snippets or full content. Simple version: get content and truncate
-            cursor.execute(
-                "SELECT url, title, content FROM pages WHERE pages MATCH ? ORDER BY rank LIMIT ?",
-                (query, limit)
-            )
-            rows = cursor.fetchall()
-        
-            for row in rows:
+            indexed_hits = search_indexed_pages(query, limit)
+            for row in indexed_hits:
+                content = row.get("content", "")
                 hits.append(SearchHit(
-                    url=row['url'],
-                    title=row['title'],
-                    snippet=row['content'][:300] + "..." if row['content'] else "No content",
+                    url=row.get("url", ""),
+                    title=row.get("title", "Untitled"),
+                    snippet=content[:300] + ("..." if len(content) > 300 else ""),
                 ))
-        
-            conn.close()
-            print(f"✅ Local Search found {len(hits)} results for '{query}'")
-        
+            if hits:
+                print(f"✅ Indexed Database search found {len(hits)} results for '{query}'")
         except Exception as e:
-            print(f"⚠️ Local SQLite search failed: {e}")
+            print(f"⚠️ Indexed Database search failed: {e}")
 
     # 2. If no local results, Fallback to DuckDuckGo (or combine them)
     if not hits:

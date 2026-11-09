@@ -8,7 +8,7 @@ console.log('🚀 Mini Google AI Loading...');
 console.log('📡 API Base:', API_BASE);
 
 // Define login modal functions globally FIRST
-window.openLoginModal = function() {
+window.openLoginModal = function () {
     console.log('🔓 openLoginModal called');
     const loginModalOverlay = document.getElementById('login-modal-overlay');
     if (loginModalOverlay) {
@@ -25,7 +25,7 @@ window.openLoginModal = function() {
     }
 };
 
-window.closeLoginModalFunc = function() {
+window.closeLoginModalFunc = function () {
     console.log('🔒 Closing login modal');
     const loginModalOverlay = document.getElementById('login-modal-overlay');
     if (loginModalOverlay) {
@@ -38,7 +38,7 @@ window.closeLoginModalFunc = function() {
     }
 };
 
-window.openLoginFromWelcome = function() {
+window.openLoginFromWelcome = function () {
     console.log('📱 Opening login from welcome modal');
     // Close welcome modal first
     const welcomeModalOverlay = document.getElementById('welcome-modal-overlay');
@@ -49,19 +49,19 @@ window.openLoginFromWelcome = function() {
     window.openLoginModal();
 };
 
-window.toggleHelpDropdown = function(event) {
+window.toggleHelpDropdown = function (event) {
     console.log('❓ Help button clicked');
     if (event) event.stopPropagation();
     const helpDropdown = document.getElementById('help-dropdown');
     const attachDropdown = document.getElementById('attach-dropdown');
-    
+
     if (helpDropdown) {
         const isVisible = helpDropdown.classList.contains('show');
         console.log('Current state:', isVisible ? 'visible' : 'hidden');
-        
+
         // Close attach dropdown if open
         if (attachDropdown) attachDropdown.classList.remove('show');
-        
+
         // Toggle help dropdown
         helpDropdown.classList.toggle('show');
         console.log('New state:', helpDropdown.classList.contains('show') ? 'visible' : 'hidden');
@@ -76,7 +76,7 @@ document.addEventListener('click', (e) => {
     const attachDropdown = document.getElementById('attach-dropdown');
     const helpBtn = document.getElementById('help-btn');
     const attachBtn = document.getElementById('attach-btn');
-    
+
     if (helpDropdown && !helpBtn?.contains(e.target) && !helpDropdown.contains(e.target)) {
         helpDropdown.classList.remove('show');
     }
@@ -91,7 +91,7 @@ document.addEventListener('keydown', (e) => {
         const loginModal = document.getElementById('login-modal-overlay');
         const settingsModal = document.getElementById('settings-modal-overlay');
         const reportModal = document.getElementById('report-modal-overlay');
-        
+
         if (loginModal?.classList.contains('show')) {
             window.closeLoginModalFunc();
         } else if (settingsModal?.classList.contains('show')) {
@@ -104,13 +104,13 @@ document.addEventListener('keydown', (e) => {
 
 let isAuthModeSignup = false;
 
-window.toggleAuthMode = function() {
+window.toggleAuthMode = function () {
     isAuthModeSignup = !isAuthModeSignup;
     const modalTitle = document.getElementById('auth-modal-title');
     const submitBtn = document.getElementById('auth-submit-btn');
     const switchText = document.getElementById('auth-switch-text');
     const switchLink = document.getElementById('auth-switch-link');
-    
+
     if (isAuthModeSignup) {
         modalTitle.textContent = "Create account";
         submitBtn.textContent = "Sign Up";
@@ -124,16 +124,16 @@ window.toggleAuthMode = function() {
     }
 };
 
-window.handleAuthSubmit = async function() {
+window.handleAuthSubmit = async function () {
     console.log('🔐 Auth submit triggered');
     const emailInput = document.getElementById('auth-email');
     const passwordInput = document.getElementById('auth-password');
     const msgLabel = document.getElementById('auth-message');
     const btn = document.getElementById('auth-submit-btn');
-    
+
     const email = emailInput.value;
     const password = passwordInput.value;
-    
+
     if (!email || !password) {
         msgLabel.textContent = "Please enter both email and password.";
         msgLabel.style.display = "block";
@@ -149,16 +149,16 @@ window.handleAuthSubmit = async function() {
     try {
         const response = await fetch(`${API_BASE}${endpoint}`, {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
         });
 
         const data = await response.json();
-        
+
         if (response.ok) {
             localStorage.setItem('user_email', email);
-            showNotification(isAuthModeSignup 
-                ? 'Account created! Welcome email sent.' 
+            showNotification(isAuthModeSignup
+                ? 'Account created! Welcome email sent.'
                 : `Welcome back, ${email}!`, 'success');
             window.closeLoginModalFunc();
             updateUIForLoggedInUser(email);
@@ -166,7 +166,7 @@ window.handleAuthSubmit = async function() {
             msgLabel.textContent = data.detail || "Authentication failed";
             msgLabel.style.display = "block";
         }
-        
+
     } catch (e) {
         console.error(e);
         msgLabel.textContent = "Connection error. Is backend running?";
@@ -188,11 +188,11 @@ function updateUIForLoggedInUser(email) {
         loginBtn.style.border = "none";
         loginBtn.style.padding = "0";
         loginBtn.onclick = () => {
-             const doLogout = confirm(`Logged in as ${email}.\nDo you want to log out?`);
-             if(doLogout) {
-                 localStorage.removeItem('user_email');
-                 window.location.reload();
-             }
+            const doLogout = confirm(`Logged in as ${email}.\nDo you want to log out?`);
+            if (doLogout) {
+                localStorage.removeItem('user_email');
+                window.location.reload();
+            }
         };
     }
     loadHistoryFromBackend();
@@ -206,12 +206,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-window.handleHelpAction = function(action) {
+window.handleHelpAction = function (action) {
     console.log('📋 Help action:', action);
     const helpDropdown = document.getElementById('help-dropdown');
     if (helpDropdown) helpDropdown.classList.remove('show');
-    
-    switch(action) {
+
+    switch (action) {
         case 'pricing':
             showNotification('💎 Pricing: Free tier available! Pro features: $20/month for unlimited AI chat, image analysis, and priority support.', 'info');
             break;
@@ -229,7 +229,7 @@ window.handleHelpAction = function(action) {
     }
 };
 
-window.openSettingsFromHelp = function() {
+window.openSettingsFromHelp = function () {
     console.log('⚙️ Opening settings from help menu');
     const helpDropdown = document.getElementById('help-dropdown');
     const settingsModal = document.getElementById('settings-modal-overlay');
@@ -237,7 +237,7 @@ window.openSettingsFromHelp = function() {
     if (settingsModal) settingsModal.classList.add('show');
 };
 
-window.openReportFromHelp = function() {
+window.openReportFromHelp = function () {
     console.log('📝 Opening report from help menu');
     const helpDropdown = document.getElementById('help-dropdown');
     const reportModal = document.getElementById('report-modal-overlay');
@@ -245,7 +245,7 @@ window.openReportFromHelp = function() {
     if (reportModal) reportModal.classList.add('show');
 };
 
-window.closeSettingsModal = function() {
+window.closeSettingsModal = function () {
     console.log('⚙️ Closing settings modal');
     const settingsModal = document.getElementById('settings-modal-overlay');
     if (settingsModal) {
@@ -254,7 +254,7 @@ window.closeSettingsModal = function() {
     }
 };
 
-window.closeReportModal = function() {
+window.closeReportModal = function () {
     console.log('📝 Closing report modal');
     const reportModal = document.getElementById('report-modal-overlay');
     if (reportModal) {
@@ -292,7 +292,7 @@ let isGenerating = false;
 let abortController = null;
 
 // Debug helper - call window.checkImage() in console to see status
-window.checkImage = function() {
+window.checkImage = function () {
     console.log('=== IMAGE STATUS ===');
     console.log('uploadedImage exists:', uploadedImage ? 'YES' : 'NO');
     if (uploadedImage) {
@@ -304,7 +304,7 @@ window.checkImage = function() {
 };
 
 // Debug helper - force send image test
-window.testSendImage = function() {
+window.testSendImage = function () {
     console.log('=== FORCE SEND IMAGE TEST ===');
     if (uploadedImage) {
         console.log('Image exists, sending test request...');
@@ -328,7 +328,7 @@ if (searchModeBtn && aiModeBtn) {
         conversationHistory = []; // Clear conversation when switching modes
         clearSearch();
     });
-    
+
     aiModeBtn.addEventListener('click', () => {
         currentMode = 'ai';
         aiModeBtn.classList.add('active');
@@ -336,7 +336,7 @@ if (searchModeBtn && aiModeBtn) {
         searchInput.placeholder = 'Message Mini Google AI...';
         clearSearch();
     });
-    
+
     // Set AI mode as active by default
     aiModeBtn.classList.add('active');
     searchModeBtn.classList.remove('active');
@@ -350,15 +350,15 @@ if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
     recognition.continuous = false;
     recognition.interimResults = false;
     recognition.lang = 'en-US';
-    
-    recognition.onstart = function() {
+
+    recognition.onstart = function () {
         console.log('🎤 Speech recognition started');
         isRecording = true;
         voiceSubmitBtn.classList.add('recording');
         showNotification('🎤 Listening... Speak now', 'info');
     };
-    
-    recognition.onresult = function(event) {
+
+    recognition.onresult = function (event) {
         const transcript = event.results[0][0].transcript;
         console.log('📝 Transcript:', transcript);
         searchInput.value = transcript;
@@ -373,8 +373,8 @@ if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
             }
         }, 500);
     };
-    
-    recognition.onerror = function(event) {
+
+    recognition.onerror = function (event) {
         console.error('❌ Speech recognition error:', event.error);
         isRecording = false;
         voiceSubmitBtn.classList.remove('recording');
@@ -386,8 +386,8 @@ if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
             showNotification('❌ Speech recognition error: ' + event.error, 'error');
         }
     };
-    
-    recognition.onend = function() {
+
+    recognition.onend = function () {
         console.log('🎤 Speech recognition ended');
         isRecording = false;
         voiceSubmitBtn.classList.remove('recording');
@@ -401,7 +401,7 @@ if (searchInput && voiceSubmitBtn) {
     searchInput.addEventListener('input', () => {
         updateButtonState();
     });
-    
+
     // Handle button click for voice, submit, or stop
     voiceSubmitBtn.addEventListener('click', async (e) => {
         // Stop generation if currently generating
@@ -410,14 +410,14 @@ if (searchInput && voiceSubmitBtn) {
             stopGeneration();
             return;
         }
-        
+
         if (voiceSubmitBtn.classList.contains('has-input')) {
             // Let the form submit naturally
             console.log('Submit button clicked - form will submit');
         } else {
             // Voice input mode
             e.preventDefault();
-            
+
             if (isRecording) {
                 // Stop recording
                 if (recognition) {
@@ -428,10 +428,10 @@ if (searchInput && voiceSubmitBtn) {
                 }
                 return;
             }
-            
+
             // Start voice recording
             console.log('🎤 Starting voice input...');
-            
+
             // Try Web Speech API first (works best for Chrome)
             if (recognition) {
                 try {
@@ -446,15 +446,15 @@ if (searchInput && voiceSubmitBtn) {
                     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                     audioChunks = [];
                     mediaRecorder = new MediaRecorder(stream);
-                    
+
                     mediaRecorder.ondataavailable = (event) => {
                         audioChunks.push(event.data);
                     };
-                    
+
                     mediaRecorder.onstop = async () => {
                         const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
                         console.log('🎵 Audio recorded:', audioBlob.size, 'bytes');
-                        
+
                         // Convert to base64 and send to API for transcription
                         const reader = new FileReader();
                         reader.onloadend = async () => {
@@ -479,18 +479,18 @@ if (searchInput && voiceSubmitBtn) {
                             }
                         };
                         reader.readAsDataURL(audioBlob);
-                        
+
                         // Stop all tracks
                         stream.getTracks().forEach(track => track.stop());
                         isRecording = false;
                         voiceSubmitBtn.classList.remove('recording');
                     };
-                    
+
                     mediaRecorder.start();
                     isRecording = true;
                     voiceSubmitBtn.classList.add('recording');
                     showNotification('🎤 Recording... Click again to stop', 'info');
-                    
+
                     // Auto-stop after 10 seconds
                     setTimeout(() => {
                         if (mediaRecorder && mediaRecorder.state === 'recording') {
@@ -517,21 +517,21 @@ document.addEventListener('keydown', (e) => {
         searchInput.focus();
         searchInput.select();
     }
-    
+
     // Ctrl+K: Open command palette (settings)
     if (e.ctrlKey && e.key === 'k') {
         e.preventDefault();
         const settingsModal = document.getElementById('settings-modal-overlay');
         if (settingsModal) settingsModal.classList.add('show');
     }
-    
+
     // Ctrl+Shift+N: New conversation
     if (e.ctrlKey && e.shiftKey && e.key === 'N') {
         e.preventDefault();
         clearSearch();
         showNotification('🆕 New conversation started', 'success');
     }
-    
+
     // Ctrl+Shift+S: Stop generation
     if (e.ctrlKey && e.shiftKey && e.key === 'S') {
         e.preventDefault();
@@ -539,7 +539,7 @@ document.addEventListener('keydown', (e) => {
             stopGeneration();
         }
     }
-    
+
     // Ctrl+Enter: Submit query
     if (e.ctrlKey && e.key === 'Enter') {
         e.preventDefault();
@@ -547,7 +547,7 @@ document.addEventListener('keydown', (e) => {
             searchForm.requestSubmit();
         }
     }
-    
+
     // Escape: Clear search and return to home
     if (e.key === 'Escape') {
         e.preventDefault();
@@ -572,13 +572,13 @@ document.addEventListener('keydown', (e) => {
 function togglePanel(panelId) {
     const panel = document.getElementById(panelId);
     const allPanels = document.querySelectorAll('.side-panel');
-    
+
     allPanels.forEach(p => {
         if (p.id !== panelId) p.hidden = true;
     });
-    
+
     panel.hidden = !panel.hidden;
-    
+
     if (!panel.hidden) {
         if (panelId === 'bookmarks-panel') renderBookmarks();
         if (panelId === 'history-panel') renderHistory();
@@ -606,7 +606,7 @@ function renderBookmarks() {
         list.innerHTML = '<p style="color: rgba(255,204,188,0.6); text-align: center; padding: 2rem;">No bookmarks yet</p>';
         return;
     }
-    
+
     list.innerHTML = bookmarks.map((b, i) => `
         <div class="bookmark-item" onclick="openBookmark('${b.url.replace(/'/g, "\\'")}')">
             <div class="title">${b.title}</div>
@@ -669,7 +669,7 @@ function renderHistory() {
         list.innerHTML = '<p style="color: rgba(255,204,188,0.6); text-align: center; padding: 2rem;">No history yet</p>';
         return;
     }
-    
+
     list.innerHTML = history.slice(0, 50).map(h => `
         <div class="history-item" onclick="reopenSearch('${h.query.replace(/'/g, "\\'")}')">
             <div class="title">${h.title || h.query}</div>
@@ -691,7 +691,7 @@ function clearAllData() {
         localStorage.clear();
         bookmarks = [];
         history = [];
-        settings = {darkMode: true, resultsLimit: 10};
+        settings = { darkMode: true, resultsLimit: 10 };
         alert('All data cleared!');
     }
 }
@@ -715,7 +715,7 @@ function quickSearch(query) {
 // Update button state based on input and generation status
 function updateButtonState() {
     if (!voiceSubmitBtn) return;
-    
+
     if (isGenerating) {
         // Show stop button
         voiceSubmitBtn.classList.add('is-generating');
@@ -740,16 +740,16 @@ function updateButtonState() {
 function stopGeneration() {
     console.log('⏹️ Stopping generation...');
     isGenerating = false;
-    
+
     // Abort the fetch request
     if (abortController) {
         abortController.abort();
         abortController = null;
     }
-    
+
     // Update button state
     updateButtonState();
-    
+
     // Update the loading message to show it was stopped
     const loadingContainers = document.querySelectorAll('.loading-container');
     loadingContainers.forEach(container => {
@@ -757,7 +757,7 @@ function stopGeneration() {
             container.innerHTML = '<span style=\"color: var(--text-secondary); font-style: italic;\">Generation stopped by user</span>';
         }
     });
-    
+
     showNotification('⏹️ Generation stopped', 'info');
 }
 
@@ -770,17 +770,17 @@ function clearSearch() {
     heroSection.classList.remove('compact');
     isSearchPerformed = false;
     searchInput.blur();
-    
+
     // Reset conversation history in AI mode
     if (currentMode === 'ai') {
         conversationHistory = [];
     }
-    
+
     // Show header again
     const topNav = document.querySelector('.top-nav');
     if (topNav) topNav.classList.remove('hidden');
     if (mainContainer) mainContainer.classList.remove('full-height');
-    
+
     // Scroll container to top smoothly
     mainContainer.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -792,7 +792,7 @@ let hasRated = localStorage.getItem('hasRated') === 'true';
 function checkRatingPrompt() {
     searchCount++;
     localStorage.setItem('searchCount', searchCount);
-    
+
     if (searchCount >= 10 && !hasRated) {
         // Show modal after a short delay
         setTimeout(() => {
@@ -806,7 +806,7 @@ function checkRatingPrompt() {
 }
 
 let currentRating = 0;
-window.setRating = function(stars) {
+window.setRating = function (stars) {
     currentRating = stars;
     const starElements = document.querySelectorAll('.star-rating span');
     starElements.forEach((star, index) => {
@@ -814,26 +814,26 @@ window.setRating = function(stars) {
     });
 };
 
-window.submitRating = async function() {
+window.submitRating = async function () {
     const feedback = document.getElementById('rating-feedback').value;
     const email = localStorage.getItem('user_email') || 'anonymous';
-    
+
     try {
         await fetch(`${API_BASE}/rating`, {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, stars: currentRating, feedback })
         });
         showNotification('Thank you for your feedback! ⭐', 'success');
-    } catch(e) {
+    } catch (e) {
         console.error("Rating error", e);
     }
-    
+
     localStorage.setItem('hasRated', 'true');
     window.closeRatingModal();
 };
 
-window.closeRatingModal = function() {
+window.closeRatingModal = function () {
     const modal = document.getElementById('rating-modal-overlay');
     if (modal) modal.classList.remove('show');
 };
@@ -841,7 +841,7 @@ window.closeRatingModal = function() {
 // API Search Function
 async function search(query, limit = settings.resultsLimit) {
     checkRatingPrompt(); // Increment counter on search
-    
+
     const params = new URLSearchParams({ query, limit: limit.toString() });
     const response = await fetch(`${API_BASE}/search?${params.toString()}`);
     if (!response.ok) {
@@ -856,7 +856,7 @@ async function chatWithAI(userMessage) {
         role: 'user',
         content: userMessage
     });
-    
+
     const requestBody = {
         messages: conversationHistory,
         provider: 'gemini',
@@ -864,7 +864,7 @@ async function chatWithAI(userMessage) {
         temperature: 0.7,
         max_tokens: 2000
     };
-    
+
     // Add image if uploaded
     if (uploadedImage) {
         requestBody.image = uploadedImage;
@@ -872,12 +872,12 @@ async function chatWithAI(userMessage) {
     } else {
         console.log('📝 Text-only request (no image)');
     }
-    
+
     console.log('📤 Sending request to API...');
-    
+
     // Create new AbortController for this request
     abortController = new AbortController();
-    
+
     try {
         const response = await fetch(`${API_BASE}/chat`, {
             method: 'POST',
@@ -887,20 +887,20 @@ async function chatWithAI(userMessage) {
             body: JSON.stringify(requestBody),
             signal: abortController.signal
         });
-        
+
         if (!response.ok) {
             const error = await response.json();
             throw new Error(error.detail || 'AI request failed');
         }
-        
+
         const data = await response.json();
         conversationHistory.push({
             role: 'assistant',
             content: data.response
         });
-        
+
         // Note: Image clearing is now handled in performSearch function
-        
+
         return data;
     } catch (error) {
         if (error.name === 'AbortError') {
@@ -921,7 +921,7 @@ async function transcribeAudio(base64Audio) {
 // Handle AI Chat directly (for voice input auto-submit)
 async function handleAIChat(query) {
     if (!query.trim()) return;
-    
+
     // Trigger the form submission with the query
     searchInput.value = query;
     searchForm.dispatchEvent(new Event('submit'));
@@ -930,22 +930,22 @@ async function handleAIChat(query) {
 // Perform Search
 async function performSearch(query) {
     if (!query.trim()) return;
-    
+
     // Add to history
     addToHistory(query, '', query);
-    
+
     // Hide hero section
     heroSection.classList.add('compact');
     isSearchPerformed = true;
-    
+
     // Get chat container and main container
     const chatMessages = document.getElementById('chat-messages');
     const mainContainer = document.querySelector('.container');
-    
+
     // Add user message
     const userMessageDiv = document.createElement('div');
     userMessageDiv.className = 'user-message';
-    
+
     // Add image if uploaded
     if (uploadedImage) {
         const imageElement = document.createElement('img');
@@ -953,7 +953,7 @@ async function performSearch(query) {
         imageElement.className = 'user-uploaded-image';
         imageElement.alt = 'Uploaded image';
         userMessageDiv.appendChild(imageElement);
-        
+
         const textElement = document.createElement('div');
         textElement.className = 'user-message-text';
         textElement.textContent = query;
@@ -961,9 +961,9 @@ async function performSearch(query) {
     } else {
         userMessageDiv.textContent = query;
     }
-    
+
     chatMessages.appendChild(userMessageDiv);
-    
+
     // Add assistant message container with loading
     const assistantMessageDiv = document.createElement('div');
     assistantMessageDiv.className = 'assistant-message';
@@ -978,27 +978,27 @@ async function performSearch(query) {
         </div>
     `;
     chatMessages.appendChild(assistantMessageDiv);
-    
+
     // Scroll container to bottom to see new message
     setTimeout(() => {
         mainContainer.scrollTop = mainContainer.scrollHeight;
     }, 100);
-    
+
     // Clear input and reset button state
     searchInput.value = '';
     updateButtonState();
-    
+
     // Set generation state
     isGenerating = true;
     updateButtonState();
-    
+
     // Store uploaded image temporarily before clearing
     const tempUploadedImage = uploadedImage;
-    
+
     console.log('=== IMAGE FLOW DEBUG ===');
     console.log('Step 1 - Original uploadedImage:', uploadedImage ? `YES (${Math.round(uploadedImage.length / 1024)} KB)` : 'NO');
     console.log('Step 2 - Stored in tempUploadedImage:', tempUploadedImage ? `YES (${Math.round(tempUploadedImage.length / 1024)} KB)` : 'NO');
-    
+
     // Clear uploaded image preview immediately after adding to message
     if (uploadedImage) {
         uploadedImage = null;
@@ -1008,16 +1008,16 @@ async function performSearch(query) {
         searchInput.placeholder = 'Message Mini Google AI...';
         console.log('Step 3 - Cleared uploadedImage preview');
     }
-    
+
     console.log('Step 4 - Before restore, uploadedImage:', uploadedImage ? 'YES' : 'NO');
     console.log('Step 4 - Before restore, tempUploadedImage:', tempUploadedImage ? 'YES' : 'NO');
-    
+
     try {
         // Check mode and route accordingly
         if (currentMode === 'ai') {
             // Update loading text for AI
             assistantMessageDiv.querySelector('.loading-container span').textContent = 'Thinking...';
-            
+
             // Restore image temporarily for the API call
             uploadedImage = tempUploadedImage;
             console.log('Step 5 - Restored uploadedImage:', uploadedImage ? `YES (${Math.round(uploadedImage.length / 1024)} KB)` : 'NO');
@@ -1056,14 +1056,14 @@ function displayAIResponse(response, assistantMessageDiv, mainContainer) {
         codeBlocks.push({ language, code: code.trim() });
         return placeholder;
     });
-    
+
     // Process output blocks (text that looks like output)
     processedResponse = processedResponse.replace(/Output:\s*\n([\s\S]*?)(?=\n\n|$)/g, (match, output) => {
         const placeholder = `__OUTPUT_BLOCK_${codeBlocks.length}__`;
         codeBlocks.push({ type: 'output', content: output.trim() });
         return placeholder;
     });
-    
+
     // Enhanced markdown formatting
     let formattedResponse = processedResponse
         // Headers (## Header -> <h3>, # Header -> <h2>)
@@ -1080,12 +1080,12 @@ function displayAIResponse(response, assistantMessageDiv, mainContainer) {
         .replace(/\*(.+?)\*/g, '<em>$1</em>')
         // Inline code
         .replace(/`(.+?)`/g, '<code>$1</code>');
-    
+
     // Wrap consecutive <li> items in <ul> or <ol>
     formattedResponse = formattedResponse.replace(/(<li>.*?<\/li>)(?:\s*<li>.*?<\/li>)*/g, (match) => {
         return `<ul>${match}</ul>`;
     });
-    
+
     // Restore code blocks with proper formatting
     codeBlocks.forEach((block, index) => {
         if (block.type === 'output') {
@@ -1119,10 +1119,10 @@ function displayAIResponse(response, assistantMessageDiv, mainContainer) {
             formattedResponse = formattedResponse.replace(`__CODE_BLOCK_${index}__`, codeHtml);
         }
     });
-    
+
     // Store code blocks for copying
     assistantMessageDiv.setAttribute('data-code-blocks', JSON.stringify(codeBlocks));
-    
+
     // Paragraph handling - split by double newlines
     const sections = formattedResponse.split(/\n\n+/);
     formattedResponse = sections.map(section => {
@@ -1134,7 +1134,7 @@ function displayAIResponse(response, assistantMessageDiv, mainContainer) {
         // Replace single newlines with <br>
         return `<p>${section.replace(/\n/g, '<br>')}</p>`;
     }).join('');
-    
+
     assistantMessageDiv.innerHTML = `
         <div class="assistant-header">
             <div class="assistant-avatar">
@@ -1171,7 +1171,7 @@ function displayAIResponse(response, assistantMessageDiv, mainContainer) {
             </button>
         </div>
     `;
-    
+
     mainContainer.scrollTop = mainContainer.scrollHeight;
 }
 
@@ -1180,17 +1180,17 @@ function copyResponse(button) {
     const messageDiv = button.closest('.assistant-message');
     const responseDiv = messageDiv.querySelector('.ai-response');
     const textToCopy = responseDiv.innerText;
-    
+
     navigator.clipboard.writeText(textToCopy).then(() => {
         const originalTitle = button.title;
         button.title = 'Copied!';
         button.style.color = '#10b981';
-        
+
         setTimeout(() => {
             button.title = originalTitle;
             button.style.color = '';
         }, 2000);
-        
+
         showNotification('✅ Response copied to clipboard', 'success');
     });
 }
@@ -1200,7 +1200,7 @@ function regenerateResponse() {
     if (conversationHistory.length >= 2) {
         // Remove last assistant response
         conversationHistory.pop();
-        
+
         // Get the last user message
         const lastUserMessage = conversationHistory[conversationHistory.length - 1];
         if (lastUserMessage && lastUserMessage.role === 'user') {
@@ -1211,7 +1211,7 @@ function regenerateResponse() {
                 messages[messages.length - 1].remove(); // Remove assistant
                 messages[messages.length - 2].remove(); // Remove user
             }
-            
+
             // Re-submit the query
             performSearch(lastUserMessage.content);
             showNotification('🔄 Regenerating response...', 'info');
@@ -1226,25 +1226,25 @@ function readAloud(button) {
     const messageDiv = button.closest('.assistant-message');
     const responseDiv = messageDiv.querySelector('.ai-response');
     const textToRead = responseDiv.innerText;
-    
+
     if ('speechSynthesis' in window) {
         // Stop any ongoing speech
         window.speechSynthesis.cancel();
-        
+
         const utterance = new SpeechSynthesisUtterance(textToRead);
         utterance.rate = 0.9;
         utterance.pitch = 1;
         utterance.volume = 1;
-        
+
         // Change button appearance while speaking
         button.style.color = '#3b82f6';
         button.title = 'Speaking...';
-        
+
         utterance.onend = () => {
             button.style.color = '';
             button.title = 'Read aloud';
         };
-        
+
         window.speechSynthesis.speak(utterance);
         showNotification('🔊 Reading response aloud...', 'info');
     } else {
@@ -1264,9 +1264,9 @@ function copyCodeBlock(button, index) {
     const messageDiv = button.closest('.assistant-message');
     const codeBlocks = JSON.parse(messageDiv.getAttribute('data-code-blocks') || '[]');
     const block = codeBlocks[index];
-    
+
     const textToCopy = block.type === 'output' ? block.content : block.code;
-    
+
     navigator.clipboard.writeText(textToCopy).then(() => {
         const originalHtml = button.innerHTML;
         button.classList.add('copied');
@@ -1276,7 +1276,7 @@ function copyCodeBlock(button, index) {
             </svg>
             Copied!
         `;
-        
+
         setTimeout(() => {
             button.classList.remove('copied');
             button.innerHTML = originalHtml;
@@ -1304,7 +1304,7 @@ function displayResults(data, query, assistantMessageDiv, mainContainer) {
         `;
         return;
     }
-    
+
     let resultsHTML = `
         <div class="assistant-header">
             <div class="assistant-avatar">
@@ -1317,12 +1317,12 @@ function displayResults(data, query, assistantMessageDiv, mainContainer) {
             <span class="assistant-name">Mini Google</span>
         </div>
     `;
-    
+
     // Check if we should show knowledge panel
     const firstResult = data.hits[0];
-    const showKnowledgePanel = firstResult.url.includes('wikipedia.org') || 
-                                firstResult.title.toLowerCase() === query.toLowerCase();
-    
+    const showKnowledgePanel = firstResult.url.includes('wikipedia.org') ||
+        firstResult.title.toLowerCase() === query.toLowerCase();
+
     if (showKnowledgePanel && (data.featured_image || firstResult.image)) {
         const imageUrl = data.featured_image || firstResult.image;
         resultsHTML += `
@@ -1345,7 +1345,7 @@ function displayResults(data, query, assistantMessageDiv, mainContainer) {
             </div>
         `;
     }
-    
+
     // Display search results
     resultsHTML += '<div class="results-list">';
     data.hits.forEach(hit => {
@@ -1358,9 +1358,9 @@ function displayResults(data, query, assistantMessageDiv, mainContainer) {
         `;
     });
     resultsHTML += '</div>';
-    
+
     assistantMessageDiv.innerHTML = resultsHTML;
-    
+
     // Scroll to show new results
     setTimeout(() => {
         assistantMessageDiv.scrollIntoView({ behavior: 'smooth', block: 'end' });
@@ -1378,13 +1378,13 @@ if (searchForm) {
             if (uploadedImage) {
                 console.log('📏 Image size:', Math.round(uploadedImage.length / 1024), 'KB');
             }
-            
+
             // Keep header visible after search
             const topNav = document.querySelector('.top-nav');
             const mainContainer = document.querySelector('.container');
             // Don't hide the header - keep it visible
             if (mainContainer) mainContainer.classList.add('full-height');
-            
+
             performSearch(query);
         } else {
             console.log('Empty search query');
@@ -1403,7 +1403,7 @@ if (attachBtn && attachDropdown) {
         e.stopPropagation();
         attachDropdown.classList.toggle('show');
     });
-    
+
     // Close dropdown when clicking outside
     document.addEventListener('click', (e) => {
         if (!attachDropdown.contains(e.target) && e.target !== attachBtn) {
@@ -1426,19 +1426,19 @@ function compressImage(base64Str, maxWidth = 800, quality = 0.7) {
             const canvas = document.createElement('canvas');
             let width = img.width;
             let height = img.height;
-            
+
             // Calculate new dimensions while maintaining aspect ratio
             if (width > maxWidth) {
                 height = (height * maxWidth) / width;
                 width = maxWidth;
             }
-            
+
             canvas.width = width;
             canvas.height = height;
-            
+
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, width, height);
-            
+
             // Convert to base64 with compression
             resolve(canvas.toDataURL('image/jpeg', quality));
         };
@@ -1460,20 +1460,20 @@ if (imageUploadInput) {
                 // Show loading state
                 imagePreviewContainer.style.display = 'block';
                 imagePreview.style.opacity = '0.5';
-                
+
                 // Compress the image
                 const originalImage = event.target.result;
                 console.log('🔄 Compressing image...');
                 const compressedImage = await compressImage(originalImage, 800, 0.7);
-                
+
                 uploadedImage = compressedImage; // Store compressed Base64 string
                 imagePreview.src = compressedImage;
                 imagePreview.style.opacity = '1';
-                
+
                 console.log('✅ Image compressed to:', Math.round(compressedImage.length / 1024), 'KB');
                 console.log('💾 Image stored in uploadedImage variable');
                 console.log('🔍 Call window.checkImage() to verify');
-                
+
                 searchInput.placeholder = 'Describe what you want to know about this image...';
                 searchInput.focus();
             };
@@ -1530,7 +1530,7 @@ if (exportBtn) {
             bookmarks: bookmarks,
             exportDate: new Date().toISOString()
         };
-        
+
         const dataStr = JSON.stringify(exportData, null, 2);
         const dataBlob = new Blob([dataStr], { type: 'application/json' });
         const url = URL.createObjectURL(dataBlob);
@@ -1539,7 +1539,7 @@ if (exportBtn) {
         link.download = `mini-google-export-${new Date().toISOString().split('T')[0]}.json`;
         link.click();
         URL.revokeObjectURL(url);
-        
+
         showNotification('✅ Conversations exported successfully!', 'success');
     });
 }
@@ -1556,7 +1556,7 @@ if (importBtn) {
                 reader.onload = (event) => {
                     try {
                         const importData = JSON.parse(event.target.result);
-                        
+
                         if (importData.conversations) {
                             conversationHistory = importData.conversations;
                         }
@@ -1568,7 +1568,7 @@ if (importBtn) {
                             bookmarks = importData.bookmarks;
                             localStorage.setItem('bookmarks', JSON.stringify(bookmarks));
                         }
-                        
+
                         showNotification('✅ Conversations imported successfully!', 'success');
                     } catch (error) {
                         showNotification('❌ Failed to import: Invalid file format', 'error');
@@ -1587,7 +1587,7 @@ if (themeSelect) {
     const currentTheme = localStorage.getItem('theme') || 'dark';
     themeSelect.value = currentTheme;
     applyTheme(currentTheme);
-    
+
     themeSelect.addEventListener('change', (e) => {
         const theme = e.target.value;
         localStorage.setItem('theme', theme);
@@ -1634,7 +1634,7 @@ if (closeSettingsModal && settingsModalOverlay) {
     closeSettingsModal.addEventListener('click', () => {
         settingsModalOverlay.classList.remove('show');
     });
-    
+
     // Close when clicking overlay
     settingsModalOverlay.addEventListener('click', (e) => {
         if (e.target === settingsModalOverlay) {
@@ -1657,7 +1657,7 @@ if (closeReportModal && reportModalOverlay) {
         radios.forEach(radio => radio.checked = false);
         if (reportNextBtn) reportNextBtn.disabled = true;
     });
-    
+
     // Close when clicking overlay
     reportModalOverlay.addEventListener('click', (e) => {
         if (e.target === reportModalOverlay) {
@@ -1678,7 +1678,7 @@ if (reportNextBtn) {
             reportNextBtn.disabled = false;
         });
     });
-    
+
     // Handle Next button click
     reportNextBtn.addEventListener('click', () => {
         const selected = document.querySelector('input[name="report-reason"]:checked');
@@ -1694,7 +1694,7 @@ if (reportNextBtn) {
 }
 
 // Welcome modal controls
-window.closeWelcomeModal = function() {
+window.closeWelcomeModal = function () {
     const welcomeModalOverlay = document.getElementById('welcome-modal-overlay');
     if (welcomeModalOverlay) {
         welcomeModalOverlay.classList.remove('show');
@@ -1704,18 +1704,18 @@ window.closeWelcomeModal = function() {
     }
 };
 
-window.openLoginFromWelcome = function() {
+window.openLoginFromWelcome = function () {
     closeWelcomeModal();
     setTimeout(() => openLoginModal(), 200);
 };
 
-window.openSignupFromWelcome = function() {
+window.openSignupFromWelcome = function () {
     closeWelcomeModal();
     setTimeout(() => openLoginModal(), 200);
 };
 
 // Login modal controls - Robust version
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     console.log('=== Login Modal Setup Starting ===');
     const loginModalOverlay = document.getElementById('login-modal-overlay');
     const closeLoginModal = document.getElementById('close-login-modal');
@@ -1725,7 +1725,7 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('loginModalOverlay:', loginModalOverlay);
     console.log('loginBtn:', loginBtn);
     console.log('signupBtn:', signupBtn);
-    
+
     // Show welcome modal on first visit
     if (!hasVisited) {
         const welcomeModalOverlay = document.getElementById('welcome-modal-overlay');
@@ -1738,7 +1738,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Function to open login modal
-    window.openLoginModal = function() {
+    window.openLoginModal = function () {
         console.log('openLoginModal called');
         if (loginModalOverlay) {
             console.log('Adding show class to modal');
@@ -1756,7 +1756,7 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     // Function to close login modal
-    window.closeLoginModalFunc = function() {
+    window.closeLoginModalFunc = function () {
         console.log('closeLoginModalFunc called');
         if (loginModalOverlay) {
             loginModalOverlay.classList.remove('show');
@@ -1768,14 +1768,14 @@ document.addEventListener('DOMContentLoaded', function() {
     if (closeLoginModal && loginModalOverlay) {
         // Close button
         closeLoginModal.addEventListener('click', window.closeLoginModalFunc);
-        
+
         // Close when clicking overlay
         loginModalOverlay.addEventListener('click', (e) => {
             if (e.target === loginModalOverlay) {
                 window.closeLoginModalFunc();
             }
         });
-        
+
         // Close on Escape key
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && loginModalOverlay.classList.contains('show')) {
@@ -1849,21 +1849,21 @@ if (openSettingsFromHelp) {
 }
 if (helpBtn) {
     const helpDropdown = document.getElementById('help-dropdown');
-    
+
     helpBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         helpDropdown.classList.toggle('show');
         // Close attach dropdown if open
         if (attachDropdown) attachDropdown.classList.remove('show');
     });
-    
+
     // Close help dropdown when clicking outside
     document.addEventListener('click', (e) => {
         if (helpDropdown && !helpDropdown.contains(e.target) && e.target !== helpBtn) {
             helpDropdown.classList.remove('show');
         }
     });
-    
+
     // Settings option in help dropdown
     const openSettingsBtn = document.getElementById('open-settings');
     if (openSettingsBtn) {
@@ -1873,7 +1873,7 @@ if (helpBtn) {
             if (settingsModal) settingsModal.classList.add('show');
         });
     }
-    
+
     // Report conversation option
     const openReportBtn = document.getElementById('open-report');
     if (openReportBtn) {
@@ -1883,15 +1883,15 @@ if (helpBtn) {
             if (reportModal) reportModal.classList.add('show');
         });
     }
-    
+
     // Handle other help dropdown items with data-action
     const helpDropdownItems = helpDropdown.querySelectorAll('[data-action]');
     helpDropdownItems.forEach(item => {
         item.addEventListener('click', () => {
             const action = item.getAttribute('data-action');
             helpDropdown.classList.remove('show');
-            
-            switch(action) {
+
+            switch (action) {
                 case 'pricing':
                     showNotification('💎 Pricing: Free tier available! Pro features: $20/month for unlimited AI chat, image analysis, and priority support.');
                     break;
@@ -1918,7 +1918,7 @@ if (attachDropdown) {
         item.addEventListener('click', () => {
             const action = item.getAttribute('data-action');
             attachDropdown.classList.remove('show');
-            
+
             if (action === 'connect-apps' || action === 'documents') {
                 showNotification('This feature requires login. Please sign in to continue.');
             }
@@ -1930,7 +1930,7 @@ if (attachDropdown) {
 function showNotification(message, type = 'info', duration = 3000) {
     const notification = document.createElement('div');
     notification.className = `login-notification notification-${type}`;
-    
+
     let icon = '';
     if (type === 'success') {
         icon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>';
@@ -1939,10 +1939,10 @@ function showNotification(message, type = 'info', duration = 3000) {
     } else {
         icon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>';
     }
-    
+
     notification.innerHTML = `${icon}<span>${message}</span>`;
     document.body.appendChild(notification);
-    
+
     setTimeout(() => notification.classList.add('show'), 10);
     setTimeout(() => {
         notification.classList.remove('show');
@@ -1997,14 +1997,14 @@ let providerModels = {
 if (providerSelect && modelSelect) {
     providerSelect.value = aiSettings.provider;
     modelSelect.value = aiSettings.model;
-    
+
     // Update models based on provider
     providerSelect.addEventListener('change', (e) => {
         aiSettings.provider = e.target.value;
         updateModelOptions(e.target.value);
         localStorage.setItem('aiSettings', JSON.stringify(aiSettings));
     });
-    
+
     modelSelect.addEventListener('change', (e) => {
         aiSettings.model = e.target.value;
         localStorage.setItem('aiSettings', JSON.stringify(aiSettings));
@@ -2081,7 +2081,7 @@ document.getElementById('import-conversations-btn')?.addEventListener('click', (
 document.getElementById('import-file-input')?.addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    
+
     const reader = new FileReader();
     reader.onload = (event) => {
         try {
@@ -2134,7 +2134,7 @@ function startNewConversation() {
 
 function saveCurrentConversation() {
     if (conversationHistory.length === 0) return;
-    
+
     const title = conversationHistory[0]?.content?.substring(0, 50) || 'New Conversation';
     const conversation = {
         id: currentConversationId || Date.now(),
@@ -2143,7 +2143,7 @@ function saveCurrentConversation() {
         timestamp: new Date().toISOString(),
         mode: currentMode
     };
-    
+
     const index = conversations.findIndex(c => c.id === conversation.id);
     if (index >= 0) {
         conversations[index] = conversation;
@@ -2151,12 +2151,12 @@ function saveCurrentConversation() {
         conversations.unshift(conversation);
         currentConversationId = conversation.id;
     }
-    
+
     // Keep only last 50 conversations
     if (conversations.length > 50) {
         conversations = conversations.slice(0, 50);
     }
-    
+
     localStorage.setItem('conversations', JSON.stringify(conversations));
     renderConversationList();
 }
@@ -2164,11 +2164,11 @@ function saveCurrentConversation() {
 function loadConversation(id) {
     const conversation = conversations.find(c => c.id === id);
     if (!conversation) return;
-    
+
     currentConversationId = id;
     conversationHistory = conversation.messages;
     currentMode = conversation.mode || 'ai';
-    
+
     // Update mode buttons
     if (currentMode === 'ai') {
         aiModeBtn.classList.add('active');
@@ -2177,15 +2177,15 @@ function loadConversation(id) {
         searchModeBtn.classList.add('active');
         aiModeBtn.classList.remove('active');
     }
-    
+
     // Recreate conversation UI
     clearSearch();
     heroSection.classList.add('compact');
     isSearchPerformed = true;
-    
+
     const chatMessages = document.getElementById('chat-messages');
     const mainContainer = document.querySelector('.container');
-    
+
     conversation.messages.forEach((msg, index) => {
         if (msg.role === 'user') {
             const userDiv = document.createElement('div');
@@ -2199,7 +2199,7 @@ function loadConversation(id) {
             chatMessages.appendChild(assistantDiv);
         }
     });
-    
+
     sidebar.classList.remove('open');
     sidebarToggleBtn.classList.remove('hidden');
     mainContainer.scrollTop = mainContainer.scrollHeight;
@@ -2207,29 +2207,29 @@ function loadConversation(id) {
 
 function renderConversationList() {
     if (!conversationList) return;
-    
+
     conversationList.innerHTML = '';
-    
+
     if (conversations.length === 0) {
         conversationList.innerHTML = '<div style="padding: 1rem; color: var(--text-secondary); text-align: center;">No conversations yet</div>';
         return;
     }
-    
+
     conversations.forEach(conv => {
         const item = document.createElement('div');
         item.className = 'conversation-item';
         if (conv.id === currentConversationId) {
             item.classList.add('active');
         }
-        
+
         const date = new Date(conv.timestamp);
         const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        
+
         item.innerHTML = `
             <div class="conversation-title">${conv.title}</div>
             <div class="conversation-date">${dateStr}</div>
         `;
-        
+
         item.addEventListener('click', () => loadConversation(conv.id));
         conversationList.appendChild(item);
     });
@@ -2237,7 +2237,7 @@ function renderConversationList() {
 
 // Save conversation after each AI response
 const originalChatWithAI = chatWithAI;
-chatWithAI = async function(userMessage) {
+chatWithAI = async function (userMessage) {
     const result = await originalChatWithAI.call(this, userMessage);
     saveCurrentConversation();
     return result;
@@ -2262,9 +2262,9 @@ function addResponseActions(assistantMessageDiv) {
             Regenerate
         </button>
     `;
-    
+
     assistantMessageDiv.appendChild(actionsDiv);
-    
+
     // Copy button functionality
     const copyBtn = actionsDiv.querySelector('.copy-btn');
     copyBtn.addEventListener('click', () => {
@@ -2287,24 +2287,24 @@ function addResponseActions(assistantMessageDiv) {
             }, 2000);
         });
     });
-    
+
     // Regenerate button functionality
     const regenerateBtn = actionsDiv.querySelector('.regenerate-btn');
     regenerateBtn.addEventListener('click', async () => {
         if (conversationHistory.length < 2) return;
-        
+
         // Remove last assistant response
         conversationHistory.pop();
         const lastUserMessage = conversationHistory[conversationHistory.length - 1]?.content;
-        
+
         if (lastUserMessage) {
             // Remove last user message too
             conversationHistory.pop();
-            
+
             // Regenerate
             regenerateBtn.disabled = true;
             regenerateBtn.textContent = 'Regenerating...';
-            
+
             try {
                 await performSearch(lastUserMessage);
             } catch (error) {
@@ -2323,28 +2323,28 @@ document.addEventListener('keydown', (e) => {
         searchInput.select();
         showToast('Search focused');
     }
-    
+
     // Ctrl+/ or Cmd+/ - Clear search
     if ((e.ctrlKey || e.metaKey) && e.key === '/') {
         e.preventDefault();
         clearSearch();
         showToast('Search cleared');
     }
-    
+
     // Ctrl+Shift+H - Toggle conversation sidebar
     if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'H') {
         e.preventDefault();
         sidebar.classList.toggle('open');
         sidebarToggleBtn.classList.toggle('hidden');
     }
-    
+
     // Ctrl+Shift+N - New conversation
     if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'N') {
         e.preventDefault();
         startNewConversation();
         showToast('New conversation started');
     }
-    
+
     // Escape - Close sidebar
     if (e.key === 'Escape' && sidebar.classList.contains('open')) {
         sidebar.classList.remove('open');
@@ -2356,12 +2356,12 @@ document.addEventListener('keydown', (e) => {
 function showToast(message) {
     const existingToast = document.querySelector('.shortcut-toast');
     if (existingToast) existingToast.remove();
-    
+
     const toast = document.createElement('div');
     toast.className = 'shortcut-toast';
     toast.textContent = message;
     document.body.appendChild(toast);
-    
+
     setTimeout(() => toast.classList.add('show'), 10);
     setTimeout(() => {
         toast.classList.remove('show');
@@ -2374,12 +2374,12 @@ renderConversationList();
 
 // Update displayAIResponse to use current model and add syntax highlighting
 const originalDisplayAIResponse = displayAIResponse;
-displayAIResponse = function(response, assistantMessageDiv, mainContainer) {
+displayAIResponse = function (response, assistantMessageDiv, mainContainer) {
     originalDisplayAIResponse.call(this, response, assistantMessageDiv, mainContainer);
-    
+
     // Add action buttons
     addResponseActions(assistantMessageDiv);
-    
+
     // Apply syntax highlighting if enabled
     if (aiSettings.syntaxHighlighting && typeof Prism !== 'undefined') {
         assistantMessageDiv.querySelectorAll('pre code').forEach((block) => {
@@ -2390,12 +2390,12 @@ displayAIResponse = function(response, assistantMessageDiv, mainContainer) {
 
 // Update chatWithAI to use selected model
 const originalChatWithAICall = chatWithAI;
-chatWithAI = async function(userMessage) {
+chatWithAI = async function (userMessage) {
     conversationHistory.push({
         role: 'user',
         content: userMessage
     });
-    
+
     const requestBody = {
         messages: conversationHistory,
         provider: aiSettings.provider,
@@ -2403,7 +2403,7 @@ chatWithAI = async function(userMessage) {
         temperature: 0.7,
         max_tokens: 2000
     };
-    
+
     // CRITICAL: Add image if uploaded
     if (uploadedImage) {
         requestBody.image = uploadedImage;
@@ -2411,7 +2411,7 @@ chatWithAI = async function(userMessage) {
     } else {
         console.log('📝 [Model Selector] Text-only request (no image)');
     }
-    
+
     console.log('📤 [Model Selector] Sending request to API...');
     const response = await fetch(`${API_BASE}/chat`, {
         method: 'POST',
@@ -2420,12 +2420,12 @@ chatWithAI = async function(userMessage) {
         },
         body: JSON.stringify(requestBody)
     });
-    
+
     if (!response.ok) {
         const error = await response.json();
         throw new Error(error.detail || 'AI request failed');
     }
-    
+
     const data = await response.json();
     conversationHistory.push({
         role: 'assistant',
@@ -2437,7 +2437,7 @@ chatWithAI = async function(userMessage) {
         title: 'AI conversation',
         response: data.response
     });
-    
+
     return data;
 };
 
@@ -2447,10 +2447,10 @@ chatWithAI = async function(userMessage) {
 function updateGreeting() {
     const greetingEl = document.getElementById('dynamic-greeting');
     if (!greetingEl) return;
-    
+
     const hour = new Date().getHours();
     let greeting, emoji;
-    
+
     if (hour < 12) {
         greeting = "Good morning!";
         emoji = "☀️";
@@ -2461,7 +2461,7 @@ function updateGreeting() {
         greeting = "Good evening!";
         emoji = "🌙";
     }
-    
+
     greetingEl.textContent = `${greeting} ${emoji} How can I help you today?`;
 }
 
@@ -2474,12 +2474,12 @@ function applyTheme(theme) {
         const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         theme = prefersDark ? 'dark' : 'light';
     }
-    
+
     document.body.classList.remove('light-theme', 'dark-theme');
     if (theme === 'light') {
         document.body.classList.add('light-theme');
     }
-    
+
     currentTheme = theme;
     localStorage.setItem('theme', theme);
 }
@@ -2487,7 +2487,7 @@ function applyTheme(theme) {
 if (themeSelect2) {
     themeSelect2.value = localStorage.getItem('theme') || 'dark';
     applyTheme(themeSelect2.value);
-    
+
     themeSelect2.addEventListener('change', (e) => {
         applyTheme(e.target.value);
         showToast(`Theme changed to ${e.target.value}`);
@@ -2528,11 +2528,11 @@ function showTypingIndicator(container) {
 function addFollowupQuestions(assistantMessageDiv, topic) {
     const followups = generateFollowupQuestions(topic);
     if (followups.length === 0) return;
-    
+
     const followupDiv = document.createElement('div');
     followupDiv.className = 'followup-questions';
     followupDiv.innerHTML = '<p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0.5rem;">Related questions:</p>';
-    
+
     followups.forEach(question => {
         const btn = document.createElement('button');
         btn.className = 'followup-question';
@@ -2543,7 +2543,7 @@ function addFollowupQuestions(assistantMessageDiv, topic) {
         });
         followupDiv.appendChild(btn);
     });
-    
+
     assistantMessageDiv.appendChild(followupDiv);
 }
 
@@ -2560,58 +2560,58 @@ function generateFollowupQuestions(topic) {
 
 // Enhanced Search with Typing Indicator
 const originalPerformSearch = performSearch;
-performSearch = async function(query) {
+performSearch = async function (query) {
     if (!query.trim()) return;
-    
+
     // Hide suggestions after first search
     const suggestionChips = document.getElementById('suggestion-chips');
     if (suggestionChips) {
         suggestionChips.style.display = 'none';
     }
-    
+
     // Add to history
     addToHistory(query, '', query);
-    
+
     // Hide hero section
     heroSection.classList.add('compact');
     isSearchPerformed = true;
-    
+
     // Get chat container and main container
     const chatMessages = document.getElementById('chat-messages');
     const mainContainer = document.querySelector('.container');
-    
+
     // Add user message
     const userMessageDiv = document.createElement('div');
     userMessageDiv.className = 'user-message';
     userMessageDiv.textContent = query;
     chatMessages.appendChild(userMessageDiv);
-    
+
     // Show typing indicator
     const typingIndicator = showTypingIndicator(chatMessages);
-    
+
     // Scroll to show typing indicator
     setTimeout(() => {
         mainContainer.scrollTop = mainContainer.scrollHeight;
     }, 100);
-    
+
     // Clear input
     searchInput.value = '';
-    
+
     try {
         // Check mode and route accordingly
         if (currentMode === 'ai') {
             const data = await chatWithAI(query);
-            
+
             // Remove typing indicator
             typingIndicator.remove();
-            
+
             // Add assistant message container
             const assistantMessageDiv = document.createElement('div');
             assistantMessageDiv.className = 'assistant-message';
             chatMessages.appendChild(assistantMessageDiv);
-            
+
             displayAIResponse(data.response, assistantMessageDiv, mainContainer);
-            
+
             // Add follow-up questions
             const firstWord = query.split(' ')[0].toLowerCase();
             if (['what', 'how', 'why', 'explain'].includes(firstWord)) {
@@ -2622,16 +2622,16 @@ performSearch = async function(query) {
         } else {
             const data = await search(query);
             typingIndicator.remove();
-            
+
             const assistantMessageDiv = document.createElement('div');
             assistantMessageDiv.className = 'assistant-message';
             chatMessages.appendChild(assistantMessageDiv);
-            
+
             displayResults(data, query, assistantMessageDiv, mainContainer);
         }
     } catch (error) {
         typingIndicator.remove();
-        
+
         const assistantMessageDiv = document.createElement('div');
         assistantMessageDiv.className = 'assistant-message';
         assistantMessageDiv.innerHTML = `
@@ -2656,9 +2656,9 @@ function showWelcomeMessage() {
         "⚡ Switch between different AI models in Settings",
         "📋 Click 'Copy' on any code block to copy it instantly"
     ];
-    
+
     const randomTip = tips[Math.floor(Math.random() * tips.length)];
-    
+
     // Show tip after 3 seconds
     setTimeout(() => {
         if (!isSearchPerformed) {
@@ -2671,12 +2671,12 @@ function showWelcomeMessage() {
 function showToast(message, duration = 2000) {
     const existingToast = document.querySelector('.shortcut-toast');
     if (existingToast) existingToast.remove();
-    
+
     const toast = document.createElement('div');
     toast.className = 'shortcut-toast';
     toast.textContent = message;
     document.body.appendChild(toast);
-    
+
     setTimeout(() => toast.classList.add('show'), 10);
     setTimeout(() => {
         toast.classList.remove('show');

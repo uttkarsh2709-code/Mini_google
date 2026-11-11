@@ -1,7 +1,7 @@
 const API_BASE = window.__MINI_GOOGLE_API__ || localStorage.getItem('mini_google_api_url') || (
     window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.port === '8080' || window.location.protocol === 'file:'
         ? 'http://127.0.0.1:8000'
-        : ''
+        : 'https://mini-google-eb29.onrender.com'
 );
 
 console.log('🚀 Mini Google AI Loading...');

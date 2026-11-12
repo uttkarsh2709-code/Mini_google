@@ -2558,7 +2558,7 @@ function generateFollowupQuestions(topic) {
     return questions.slice(0, 3);
 }
 
-// Enhanced Search with Typing Indicator
+// Enhanced Search with Typing Indicator (this is the version that actually runs)
 const originalPerformSearch = performSearch;
 performSearch = async function (query) {
     if (!query.trim()) return;
@@ -2580,10 +2580,30 @@ performSearch = async function (query) {
     const chatMessages = document.getElementById('chat-messages');
     const mainContainer = document.querySelector('.container');
 
-    // Add user message
+    // Add user message (with image if one is attached)
     const userMessageDiv = document.createElement('div');
     userMessageDiv.className = 'user-message';
-    userMessageDiv.textContent = query;
+
+    if (uploadedImage) {
+        const imageElement = document.createElement('img');
+        imageElement.src = uploadedImage;
+        imageElement.className = 'user-uploaded-image';
+        imageElement.alt = 'Uploaded image';
+        userMessageDiv.appendChild(imageElement);
+
+        const textElement = document.createElement('div');
+        textElement.className = 'user-message-text';
+        textElement.textContent = query;
+        userMessageDiv.appendChild(textElement);
+
+        // Hide the preview bar now; the image data stays in memory until the request finishes
+        imagePreview.src = '';
+        imagePreviewContainer.style.display = 'none';
+        imageUploadInput.value = '';
+        searchInput.placeholder = 'Message Mini Google AI...';
+    } else {
+        userMessageDiv.textContent = query;
+    }
     chatMessages.appendChild(userMessageDiv);
 
     // Show typing indicator
@@ -2600,6 +2620,14 @@ performSearch = async function (query) {
     try {
         // Check mode and route accordingly
         if (currentMode === 'ai') {
+            // Image generation request?
+            const imagePrompt = extractImagePrompt(query);
+            if (imagePrompt) {
+                typingIndicator.remove();
+                showGeneratedImage(imagePrompt, chatMessages, mainContainer);
+                return;
+            }
+
             const data = await chatWithAI(query);
 
             // Remove typing indicator
@@ -2644,8 +2672,53 @@ performSearch = async function (query) {
             </div>
         `;
         chatMessages.appendChild(assistantMessageDiv);
+    } finally {
+        // Clear the image so it isn't re-sent with the next message
+        uploadedImage = null;
     }
 };
+
+// ===== IMAGE GENERATION (Pollinations.ai) =====
+
+// Detects "/image a red car", "generate an image of a cat", etc.
+function extractImagePrompt(text) {
+    const m = text.trim().match(
+        /^(?:\/imagine|\/image|(?:generate|create|draw|make)(?:\s+me)?\s+(?:an?\s+)?(?:image|picture|photo|drawing)\s*(?:of|showing)?)\s*(.+)$/i
+    );
+    return m ? m[1].trim() : null;
+}
+
+function showGeneratedImage(prompt, chatMessages, mainContainer) {
+    const seed = Math.floor(Math.random() * 1000000);
+    const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=768&height=768&model=flux&nologo=true&seed=${seed}`;
+
+    const div = document.createElement('div');
+    div.className = 'assistant-message';
+    div.innerHTML = `
+        <div class="assistant-header">
+            <div class="assistant-avatar">MG</div>
+            <span class="assistant-name">Mini Google</span>
+        </div>
+        <div class="ai-response">
+            <p class="gen-status">🎨 Generating image... this can take up to 30 seconds.</p>
+            <img class="generated-image" alt="" style="max-width:100%;border-radius:12px;display:none;">
+        </div>
+    `;
+    chatMessages.appendChild(div);
+
+    const img = div.querySelector('.generated-image');
+    const status = div.querySelector('.gen-status');
+    img.alt = prompt;
+    img.onload = () => {
+        status.remove();
+        img.style.display = 'block';
+        mainContainer.scrollTop = mainContainer.scrollHeight;
+    };
+    img.onerror = () => {
+        status.textContent = '❌ Image generation failed or the free service is busy. Try again in a moment.';
+    };
+    img.src = url;
+}
 
 // Welcome Messages
 function showWelcomeMessage() {
@@ -2697,4 +2770,3 @@ console.log('🔤 Search input:', searchInput ? 'Found' : 'NOT FOUND');
 
 // Update greeting every hour
 setInterval(updateGreeting, 3600000);
-

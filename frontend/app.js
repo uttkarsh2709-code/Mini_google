@@ -2622,9 +2622,26 @@ performSearch = async function (query) {
         if (currentMode === 'ai') {
             // Image generation request?
             const imagePrompt = extractImagePrompt(query);
-            if (imagePrompt) {
+            if (imagePrompt !== null) {
                 typingIndicator.remove();
-                showGeneratedImage(imagePrompt, chatMessages, mainContainer);
+                if (imagePrompt === '') {
+                    // Bare "/image" with no description: show usage help
+                    const helpDiv = document.createElement('div');
+                    helpDiv.className = 'assistant-message';
+                    helpDiv.innerHTML = `
+                        <div class="assistant-header">
+                            <div class="assistant-avatar">MG</div>
+                            <span class="assistant-name">Mini Google</span>
+                        </div>
+                        <div class="ai-response">
+                            <p>Describe the image after the command, for example:</p>
+                            <p><code>/image a cat astronaut on the moon, oil painting</code></p>
+                        </div>
+                    `;
+                    chatMessages.appendChild(helpDiv);
+                } else {
+                    showGeneratedImage(imagePrompt, chatMessages, mainContainer);
+                }
                 return;
             }
 
@@ -2680,12 +2697,35 @@ performSearch = async function (query) {
 
 // ===== IMAGE GENERATION (Pollinations.ai) =====
 
-// Detects "/image a red car", "generate an image of a cat", etc.
+// Returns the image prompt, '' for a bare "/image" (show help), or null if this is not an image request.
+// "/image <anything>" works for ANY subject or style, e.g.:
+//   /image a cat astronaut on the moon, oil painting
+//   /image modern logo for a coffee shop
+//   /image cyberpunk city at night, 4k
 function extractImagePrompt(text) {
-    const m = text.trim().match(
-        /^(?:\/imagine|\/image|(?:generate|create|draw|make)(?:\s+me)?\s+(?:an?\s+)?(?:image|picture|photo|drawing)\s*(?:of|showing)?)\s*(.+)$/i
-    );
-    return m ? m[1].trim() : null;
+    const t = text.trim();
+
+    // 1) Slash command: "/image <anything>"
+    let m = t.match(/^\/(?:imagine|image|img)(?:\s+([\s\S]+))?$/i);
+    if (m) return (m[1] || '').trim();
+
+    // 2) Natural phrases: "generate an image of ...", "give me a picture of ..."
+    const lead = '^(?:please\\s+)?(?:(?:can|could|would)\\s+you\\s+)?(?:please\\s+)?';
+    const verbs = '(?:generate|create|draw|make|give|show|send|get|produce|paint)';
+    const nouns = '(?:image|picture|photo|pic|drawing|illustration)s?';
+
+    m = t.match(new RegExp(lead + verbs + '\\s+(?:me\\s+)?(?:an?\\s+|some\\s+|the\\s+)?(?:(?:ai|new|nice|cute|beautiful|realistic)\\s+)*' + nouns + '\\s*(?:of|showing|about|for)?\\s*(.+)$', 'i'));
+    if (m) return m[1].trim();
+
+    // 3) "give me a cat image", "show me a sunset picture"
+    m = t.match(new RegExp(lead + verbs + '\\s+(?:me\\s+)?(?:an?\\s+|some\\s+)?(.+?)\\s+' + nouns + '(?:\\s+please)?\\s*[.!?]*$', 'i'));
+    if (m) {
+        const subject = m[1].trim();
+        // avoid developer phrases like "create a docker image"
+        if (/\b(docker|container|vm|iso|disk|boot|ami|base|profile|build|code|source|screenshot)\b/i.test(subject)) return null;
+        return subject;
+    }
+    return null;
 }
 
 function showGeneratedImage(prompt, chatMessages, mainContainer) {
